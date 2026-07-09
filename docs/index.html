@@ -1,0 +1,790 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DDM Bankroll Calculator</title>
+  <style>
+    :root {
+      --bg: #f5f6f8;
+      --panel: #ffffff;
+      --ink: #151922;
+      --muted: #667085;
+      --line: #d9dde5;
+      --blue: #2563eb;
+      --green: #16803c;
+      --red: #b42318;
+      --amber: #b54708;
+      --shadow: 0 1px 2px rgba(15, 23, 42, 0.08);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font: 14px/1.45 -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+    }
+    header {
+      background: #101828;
+      color: white;
+      padding: 18px 24px;
+      border-bottom: 1px solid #0b1220;
+    }
+    header h1 {
+      margin: 0;
+      font-size: 20px;
+      font-weight: 700;
+      letter-spacing: 0;
+    }
+    header p {
+      margin: 4px 0 0;
+      color: #cbd5e1;
+      font-size: 13px;
+    }
+    main {
+      display: grid;
+      grid-template-columns: minmax(320px, 420px) minmax(0, 1fr);
+      gap: 16px;
+      padding: 16px;
+      max-width: 1440px;
+      margin: 0 auto;
+    }
+    section, .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+    }
+    section h2 {
+      margin: 0;
+      padding: 14px 16px;
+      font-size: 15px;
+      border-bottom: 1px solid var(--line);
+    }
+    .form {
+      padding: 14px 16px 16px;
+      display: grid;
+      gap: 12px;
+    }
+    label {
+      display: grid;
+      gap: 5px;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+    }
+    input, select {
+      width: 100%;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 9px 10px;
+      color: var(--ink);
+      background: white;
+      font: inherit;
+    }
+    input:focus, select:focus {
+      outline: 2px solid rgba(37, 99, 235, 0.22);
+      border-color: var(--blue);
+    }
+    .grid2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .rph-helper {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      background: #fbfcfe;
+      display: grid;
+      gap: 8px;
+    }
+    .check-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .check-row input {
+      width: auto;
+    }
+    .helper-text {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .ramp-table {
+      width: 100%;
+      border-collapse: collapse;
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+    }
+    .ramp-table th, .ramp-table td {
+      border-bottom: 1px solid var(--line);
+      padding: 8px;
+      text-align: right;
+      font-size: 13px;
+    }
+    .ramp-table th:first-child, .ramp-table td:first-child { text-align: left; }
+    .ramp-table th {
+      color: var(--muted);
+      background: #f8fafc;
+      font-weight: 700;
+    }
+    .ramp-table tr:last-child td { border-bottom: 0; }
+    .ramp-table input {
+      padding: 6px 8px;
+      text-align: right;
+      min-width: 72px;
+    }
+    .results {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(150px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .metric {
+      padding: 14px;
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      min-height: 84px;
+    }
+    .metric .label {
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 700;
+    }
+    .metric .value {
+      margin-top: 6px;
+      font-size: 22px;
+      font-weight: 800;
+      letter-spacing: 0;
+    }
+    .metric .sub {
+      margin-top: 2px;
+      color: var(--muted);
+      font-size: 12px;
+    }
+    .good { color: var(--green); }
+    .bad { color: var(--red); }
+    .warn { color: var(--amber); }
+    .chart-wrap { padding: 16px; }
+    .chart-tools {
+      display: grid;
+      grid-template-columns: minmax(180px, 240px) 1fr;
+      gap: 12px;
+      align-items: end;
+      padding: 12px 16px 0;
+      border-bottom: 1px solid var(--line);
+    }
+    .chart-note {
+      color: var(--muted);
+      font-size: 12px;
+      padding-bottom: 9px;
+    }
+    canvas {
+      width: 100%;
+      height: 260px;
+      display: block;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #ffffff;
+    }
+    .detail {
+      margin-top: 16px;
+      overflow: auto;
+    }
+    .detail table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+    }
+    .detail th, .detail td {
+      padding: 9px 10px;
+      border-bottom: 1px solid var(--line);
+      text-align: right;
+      white-space: nowrap;
+    }
+    .detail th:first-child, .detail td:first-child { text-align: left; }
+    .detail th {
+      color: var(--muted);
+      background: #f8fafc;
+      font-size: 12px;
+    }
+    .note {
+      padding: 12px 16px;
+      color: var(--muted);
+      font-size: 12px;
+      border-top: 1px solid var(--line);
+      background: #fbfcfe;
+      border-radius: 0 0 8px 8px;
+    }
+    .warning {
+      max-width: 1600px;
+      margin: 16px auto 0;
+      padding: 12px 16px;
+      border: 1px solid #f5c26b;
+      background: #fff8e8;
+      color: #8a4b00;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 700;
+    }
+    @media (max-width: 980px) {
+      main { grid-template-columns: 1fr; }
+      .results { grid-template-columns: repeat(2, minmax(150px, 1fr)); }
+    }
+    @media (max-width: 560px) {
+      .grid2, .results, .chart-tools { grid-template-columns: 1fr; }
+      header { padding: 16px; }
+      main { padding: 10px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Double Down Madness Bankroll Calculator</h1>
+    <p>Version 1 · strict Ace rule · Hi-Lo true count ramp</p>
+  </header>
+  <div class="warning">
+    Data note: heads-up data can be read as a no-Push-22-seat model. Multi-player / Push-22-present scenarios should be rerun with dealer-completes-hand card consumption before publication-grade conclusions.
+  </div>
+
+  <main>
+    <section>
+      <h2>Inputs</h2>
+      <div class="form">
+        <div class="grid2">
+          <label>
+            Bankroll ($)
+            <input id="bankroll" type="number" min="0" step="100" value="10000">
+          </label>
+          <label>
+            Two hands
+            <select id="twoHandsFrom">
+              <option value="never">Never</option>
+              <option value="always">Always</option>
+              <option value="1">TC >= 1</option>
+              <option value="2" selected>TC >= 2</option>
+              <option value="3">TC >= 3</option>
+            </select>
+          </label>
+        </div>
+        <div class="grid2">
+          <label>
+            TC estimation
+            <select id="tcEstimate"></select>
+          </label>
+          <div></div>
+        </div>
+        <div class="grid2">
+          <label>
+            Number of decks
+            <select id="decks"></select>
+          </label>
+          <label>
+            Cut card
+            <select id="cutCard"></select>
+          </label>
+        </div>
+        <div class="grid2">
+          <label>
+            Players at table
+            <select id="playersAtTable"></select>
+          </label>
+          <label>
+            Table rounds / hour
+            <input id="handsPerHour" type="number" min="1" step="1" value="143" readonly>
+          </label>
+        </div>
+        <div class="rph-helper">
+          <div class="helper-text" id="rphHelp">Built in: 3 shoes/hour · estimated from simulated card consumption.</div>
+        </div>
+        <div class="grid2">
+          <label>
+            Chart
+            <select id="chartMode">
+              <option value="ev">Weighted EV contribution</option>
+              <option value="freq">True count frequency</option>
+            </select>
+          </label>
+          <label>
+            Risk model
+            <select id="riskModel">
+              <option value="diffusion">Diffusion approximation</option>
+            </select>
+          </label>
+        </div>
+
+        <table class="ramp-table" id="rampTable">
+          <thead>
+            <tr>
+              <th>True count</th>
+              <th>Freq.</th>
+              <th>Base EV</th>
+              <th>Bet / spot ($)</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+      <div class="note">
+        The selected deck/cut/player combination controls the true-count frequency and fixed-$1-per-spot bucket statistics.
+        Two-hand thresholds combine one-hand and two-hand bucket samples for fast comparison.
+        Risk of ruin is a first-pass approximation; final ramps should be rerun directly in the simulator.
+      </div>
+    </section>
+
+    <div>
+      <div class="results">
+        <div class="metric">
+          <div class="label">EV / round</div>
+          <div class="value" id="evHand">-</div>
+          <div class="sub" id="evHandSub">-</div>
+        </div>
+        <div class="metric">
+          <div class="label">EV / hour</div>
+          <div class="value" id="evHour">-</div>
+          <div class="sub" id="ev100">-</div>
+        </div>
+        <div class="metric">
+          <div class="label">SD / round</div>
+          <div class="value" id="sdHand">-</div>
+          <div class="sub" id="avgBet">-</div>
+        </div>
+        <div class="metric">
+          <div class="label">Risk of ruin</div>
+          <div class="value" id="ror">-</div>
+          <div class="sub" id="n0">-</div>
+        </div>
+      </div>
+
+      <section>
+        <h2>EV Contribution by True Count</h2>
+        <div class="chart-tools">
+          <label>
+            Chart view
+            <select id="chartModeTop">
+              <option value="ev">Weighted EV contribution</option>
+              <option value="freq">True count frequency</option>
+            </select>
+          </label>
+          <div class="chart-note" id="scenarioNote"></div>
+        </div>
+        <div class="chart-wrap">
+          <canvas id="chart" width="1000" height="300"></canvas>
+        </div>
+        <div class="detail">
+          <table>
+            <thead>
+              <tr>
+                <th>TC</th>
+                <th>Rounds</th>
+                <th>Freq.</th>
+                <th>Hands</th>
+                <th>Bet / spot</th>
+                <th>Base EV</th>
+                <th>EV / round</th>
+                <th>EV / bet</th>
+                <th>SD / round</th>
+              </tr>
+            </thead>
+            <tbody id="detailRows"></tbody>
+          </table>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const scenarioData = {
+      d6_cut1_u1_o0: { label: "6 decks · cut 1 deck · heads-up", note: "50M table rounds. Publication-grade heads-up dataset.", userSpots: 1, data: [{"tc":"<=-5","rounds":3232820,"ev":-0.08391682803249176,"sd":1.6407014668637312},{"tc":"-4","rounds":2065256,"ev":-0.05227439116506622,"sd":1.6449979527139207},{"tc":"-3","rounds":3410582,"ev":-0.0374205927316804,"sd":1.647641181748851},{"tc":"-2","rounds":5929048,"ev":-0.026326992124199367,"sd":1.6498664627340547},{"tc":"-1","rounds":8872626,"ev":-0.014419068266824275,"sd":1.653030448820056},{"tc":"0","rounds":12556474,"ev":-0.003932712320353628,"sd":1.654598973895133},{"tc":"1","rounds":5592233,"ev":0.00961923439170006,"sd":1.656691791525734},{"tc":"2","rounds":3273189,"ev":0.02080142637653982,"sd":1.6594016661063966},{"tc":"3","rounds":1927462,"ev":0.03015052955648412,"sd":1.6630175760795667},{"tc":"4","rounds":1213214,"ev":0.041025738245684604,"sd":1.6650675344232702},{"tc":"5","rounds":734787,"ev":0.055256829530190385,"sd":1.667609310980582},{"tc":"6","rounds":463859,"ev":0.0671497157541408,"sd":1.6698167159143618},{"tc":"7","rounds":281178,"ev":0.07894998897495537,"sd":1.6825887237534933},{"tc":">=8","rounds":447272,"ev":0.10227557280580944,"sd":1.6831616535294618}] },
+      d6_cut1_u2_o0: { label: "6 decks · cut 1 deck · heads-up · two-hand data", note: "50M table rounds. Hidden support dataset.", userSpots: 2, data: [{"tc":"<=-5","rounds":3218122,"ev":-0.163655075848585,"sd":2.647357586686902},{"tc":"-4","rounds":2048485,"ev":-0.10090188602796701,"sd":2.6423751266547093},{"tc":"-3","rounds":3381673,"ev":-0.07341691523692563,"sd":2.644342856416252},{"tc":"-2","rounds":5879336,"ev":-0.05179564495038215,"sd":2.645663268100567},{"tc":"-1","rounds":8716372,"ev":-0.03042458490757393,"sd":2.647016754736329},{"tc":"0","rounds":12866847,"ev":-0.009446292475538102,"sd":2.646773437284116},{"tc":"1","rounds":5574834,"ev":0.017418276490385184,"sd":2.6467715679862733},{"tc":"2","rounds":3262911,"ev":0.04034219750400792,"sd":2.6478715241611925},{"tc":"3","rounds":1924165,"ev":0.0656430191797481,"sd":2.6525014534865763},{"tc":"4","rounds":1206341,"ev":0.0831812895358775,"sd":2.6517346812929334},{"tc":"5","rounds":733411,"ev":0.11262443568476611,"sd":2.6563232966898527},{"tc":"6","rounds":460568,"ev":0.13786020739608484,"sd":2.654605533394029},{"tc":"7","rounds":280283,"ev":0.15819725063596438,"sd":2.6596815186428464},{"tc":">=8","rounds":446652,"ev":0.20376042198400546,"sd":2.669579997279133}] },
+      d6_cut1p25_u1_o0: { label: "6 decks · cut 1.25 decks · heads-up", note: "50M table rounds. Publication-grade heads-up dataset.", userSpots: 1, data: [{"tc":"<=-5","rounds":2828984,"ev":-0.08016340848870124,"sd":1.6422564435205007},{"tc":"-4","rounds":2035367,"ev":-0.05039975591625491,"sd":1.6450946615875384},{"tc":"-3","rounds":3426055,"ev":-0.03888262155744727,"sd":1.6478124108381813},{"tc":"-2","rounds":6057197,"ev":-0.02489055581319214,"sd":1.6500472005289086},{"tc":"-1","rounds":9143967,"ev":-0.014883255812274914,"sd":1.6518514279445904},{"tc":"0","rounds":12855331,"ev":-0.0046692691148909355,"sd":1.6553506874764925},{"tc":"1","rounds":5714965,"ev":0.008930238417908071,"sd":1.6576569287663852},{"tc":"2","rounds":3293042,"ev":0.021278198091612556,"sd":1.6595431965944052},{"tc":"3","rounds":1897347,"ev":0.03317685167763198,"sd":1.6635538252088677},{"tc":"4","rounds":1142362,"ev":0.04123561533034187,"sd":1.6646216931987095},{"tc":"5","rounds":662858,"ev":0.05760660654318119,"sd":1.6720568756992185},{"tc":"6","rounds":403767,"ev":0.06731605108887057,"sd":1.6727773243105846},{"tc":"7","rounds":230780,"ev":0.07797902764537655,"sd":1.6749929530444236},{"tc":">=8","rounds":307978,"ev":0.09868886738663152,"sd":1.6834823997961803}] },
+      d6_cut1p25_u2_o0: { label: "6 decks · cut 1.25 decks · heads-up · two-hand data", note: "50M table rounds. Hidden support dataset.", userSpots: 2, data: [{"tc":"<=-5","rounds":2820320,"ev":-0.16071119589266467,"sd":2.6467160095763025},{"tc":"-4","rounds":2020841,"ev":-0.09917009799385504,"sd":2.6438733560757393},{"tc":"-3","rounds":3400443,"ev":-0.07347160355283121,"sd":2.64524558705454},{"tc":"-2","rounds":6010614,"ev":-0.05261259498613619,"sd":2.64537122329918},{"tc":"-1","rounds":8983335,"ev":-0.03081427999735065,"sd":2.647238925625362},{"tc":"0","rounds":13166697,"ev":-0.009470104765075099,"sd":2.647500400666463},{"tc":"1","rounds":5687125,"ev":0.016484779216212057,"sd":2.647839000441666},{"tc":"2","rounds":3283904,"ev":0.04179659332306913,"sd":2.6477223549353353},{"tc":"3","rounds":1889712,"ev":0.06250846689865969,"sd":2.649823546389927},{"tc":"4","rounds":1138550,"ev":0.08575907953098239,"sd":2.6504848528892735},{"tc":"5","rounds":659948,"ev":0.10772363883215041,"sd":2.6561976101434124},{"tc":"6","rounds":402918,"ev":0.1302845740324334,"sd":2.6522875941075297},{"tc":"7","rounds":230992,"ev":0.14831682482510217,"sd":2.66458370946164},{"tc":">=8","rounds":304601,"ev":0.19860735847879685,"sd":2.6699243675643536}] },
+      p75_u1_o0: { label: "6 decks \u00b7 cut 1.5 decks \u00b7 heads-up", note: "5M table rounds. Exact TC heads-up dataset.", userSpots: 1, data: [{"tc":"<=-5","rounds":241077,"ev":-0.07526640865781473,"sd":1.641608594452993},{"tc":"-4","rounds":194133,"ev":-0.04736958682964772,"sd":1.6453532403150481},{"tc":"-3","rounds":335970,"ev":-0.036336577670625356,"sd":1.6475160165513647},{"tc":"-2","rounds":619328,"ev":-0.02671443887568461,"sd":1.650636212018486},{"tc":"-1","rounds":949432,"ev":-0.016439302656746348,"sd":1.655097823626912},{"tc":"0","rounds":1328535,"ev":-0.004252052072395533,"sd":1.6527190170460604},{"tc":"1","rounds":591532,"ev":0.01250143694677549,"sd":1.6565731345379817},{"tc":"2","rounds":324782,"ev":0.023064701861556368,"sd":1.6612171852556523},{"tc":"3","rounds":183962,"ev":0.03213163588132332,"sd":1.664776369225739},{"tc":"4","rounds":104323,"ev":0.03568724058932354,"sd":1.6643242864584826},{"tc":"5","rounds":59263,"ev":0.05062180449859103,"sd":1.6657283305842545},{"tc":"6","rounds":31898,"ev":0.0655213493008966,"sd":1.6789560326158202},{"tc":"7","rounds":17395,"ev":0.05329117562517965,"sd":1.6789037999667256},{"tc":">=8","rounds":18370,"ev":0.08454001088731627,"sd":1.6828526045299768}] },
+      p75_u2_o0: { label: "6 decks \u00b7 cut 1.5 decks \u00b7 heads-up \u00b7 two-hand data", note: "5M table rounds. Hidden exact TC support dataset.", userSpots: 2, data: [{"tc":"<=-5","rounds":239155,"ev":-0.15476573770149066,"sd":2.6524797982447295},{"tc":"-4","rounds":194317,"ev":-0.09439215302829912,"sd":2.6512421123861865},{"tc":"-3","rounds":335738,"ev":-0.07926418814670963,"sd":2.6470662359123738},{"tc":"-2","rounds":619678,"ev":-0.05215289230858607,"sd":2.6444208636342856},{"tc":"-1","rounds":934318,"ev":-0.03132445270239897,"sd":2.6456623577999037},{"tc":"0","rounds":1358441,"ev":-0.0066937025605087,"sd":2.6471036187206116},{"tc":"1","rounds":582368,"ev":0.020907742183636464,"sd":2.6478206678176717},{"tc":"2","rounds":321099,"ev":0.031093214242336475,"sd":2.6503583192923643},{"tc":"3","rounds":182518,"ev":0.06449774816730405,"sd":2.6496010199194906},{"tc":"4","rounds":104195,"ev":0.0755122606650991,"sd":2.6536309068173853},{"tc":"5","rounds":59467,"ev":0.11376057309095801,"sd":2.6508831783936526},{"tc":"6","rounds":32339,"ev":0.09749837657317789,"sd":2.665224705076979},{"tc":"7","rounds":17658,"ev":0.16026730094008382,"sd":2.665439357589127},{"tc":">=8","rounds":18709,"ev":0.2038591052434657,"sd":2.6620395791313274}] },
+      d6_cut1_u1_o1: { label: "6 decks \u00b7 cut 1 deck \u00b7 2 players", note: "5M table rounds. Two-player dataset.", userSpots: 1, data: [{"tc":"<=-5","rounds":319734,"ev":-0.08482050704648239,"sd":1.6363200848231625},{"tc":"-4","rounds":204605,"ev":-0.04850321350895628,"sd":1.6501089152298696},{"tc":"-3","rounds":337330,"ev":-0.03575134141641716,"sd":1.6461146053279536},{"tc":"-2","rounds":587904,"ev":-0.02433900772915306,"sd":1.653981670828981},{"tc":"-1","rounds":871474,"ev":-0.017237462047060496,"sd":1.6524124997735405},{"tc":"0","rounds":1286513,"ev":-0.001215689231278658,"sd":1.6557181559885195},{"tc":"1","rounds":558149,"ev":0.008734226882069126,"sd":1.655794600710331},{"tc":"2","rounds":326103,"ev":0.021232555358276374,"sd":1.660489054765678},{"tc":"3","rounds":192971,"ev":0.03904731799078618,"sd":1.6653294883275014},{"tc":"4","rounds":122266,"ev":0.03849802888783472,"sd":1.6680499899962637},{"tc":"5","rounds":73890,"ev":0.05256462308837461,"sd":1.6716605613576265},{"tc":"6","rounds":46362,"ev":0.05687847806393167,"sd":1.6659267465013923},{"tc":"7","rounds":28137,"ev":0.08334221843124712,"sd":1.690204784344561},{"tc":">=8","rounds":44562,"ev":0.09759436291010277,"sd":1.6852198484761944}] },
+      d6_cut1_u2_o1: { label: "6 decks \u00b7 cut 1 deck \u00b7 2 players \u00b7 two-hand data", note: "5M table rounds. Hidden two-player support dataset.", userSpots: 2, data: [{"tc":"<=-5","rounds":319810,"ev":-0.1723898564772834,"sd":2.6510948093036717},{"tc":"-4","rounds":202454,"ev":-0.08720993410848885,"sd":2.6470132515346005},{"tc":"-3","rounds":336014,"ev":-0.07427964311010851,"sd":2.6450971620249732},{"tc":"-2","rounds":585283,"ev":-0.04635022715506858,"sd":2.6443300861824968},{"tc":"-1","rounds":855562,"ev":-0.0344615586012469,"sd":2.6447641910340094},{"tc":"0","rounds":1315207,"ev":-0.010245535493652331,"sd":2.6467440150606114},{"tc":"1","rounds":556181,"ev":0.019121473045645213,"sd":2.650829846460941},{"tc":"2","rounds":325497,"ev":0.036992660454627846,"sd":2.6436351048749325},{"tc":"3","rounds":191640,"ev":0.0672928407430599,"sd":2.652574620266332},{"tc":"4","rounds":120937,"ev":0.10095338895457966,"sd":2.6536238880048852},{"tc":"5","rounds":73198,"ev":0.10330883357468783,"sd":2.6543161813476672},{"tc":"6","rounds":45827,"ev":0.13221463329478256,"sd":2.6583604042291484},{"tc":"7","rounds":28069,"ev":0.1378745234956714,"sd":2.651920936879294},{"tc":">=8","rounds":44321,"ev":0.20651609846348232,"sd":2.6699187953466414}] },
+      d6_cut1p25_u1_o1: { label: "6 decks \u00b7 cut 1.25 decks \u00b7 2 players", note: "5M table rounds. Two-player dataset.", userSpots: 1, data: [{"tc":"<=-5","rounds":281504,"ev":-0.07943759236103216,"sd":1.6395823923942199},{"tc":"-4","rounds":202256,"ev":-0.053664662605806504,"sd":1.6436916354443663},{"tc":"-3","rounds":340813,"ev":-0.03974320228395044,"sd":1.6469592625969982},{"tc":"-2","rounds":602389,"ev":-0.02293368570807236,"sd":1.6500483515326552},{"tc":"-1","rounds":897967,"ev":-0.013621881427713936,"sd":1.6522426764733174},{"tc":"0","rounds":1316692,"ev":-0.003865748405853457,"sd":1.655295509185092},{"tc":"1","rounds":568213,"ev":0.00788084749908925,"sd":1.6581080682581504},{"tc":"2","rounds":328228,"ev":0.02089705936117577,"sd":1.660329034738169},{"tc":"3","rounds":189347,"ev":0.0318832619476411,"sd":1.6600285181035785},{"tc":"4","rounds":113585,"ev":0.04462737157195052,"sd":1.6645547373123064},{"tc":"5","rounds":65843,"ev":0.05640690734018802,"sd":1.6650952920779742},{"tc":"6","rounds":40058,"ev":0.0762394527934495,"sd":1.6670780879190845},{"tc":"7","rounds":22719,"ev":0.0866675469871033,"sd":1.6759898344739506},{"tc":">=8","rounds":30386,"ev":0.10004607384979924,"sd":1.6743725185845395}] },
+      d6_cut1p25_u2_o1: { label: "6 decks \u00b7 cut 1.25 decks \u00b7 2 players \u00b7 two-hand data", note: "5M table rounds. Hidden two-player support dataset.", userSpots: 2, data: [{"tc":"<=-5","rounds":280724,"ev":-0.15560123110243512,"sd":2.646857936580003},{"tc":"-4","rounds":201280,"ev":-0.10183823529411765,"sd":2.644444524558328},{"tc":"-3","rounds":338663,"ev":-0.07331772292810257,"sd":2.6483027753569197},{"tc":"-2","rounds":597670,"ev":-0.04870580755266284,"sd":2.6511263364296784},{"tc":"-1","rounds":881614,"ev":-0.028560118146944126,"sd":2.6452663609898948},{"tc":"0","rounds":1345783,"ev":-0.012865372797843336,"sd":2.649574616428931},{"tc":"1","rounds":566855,"ev":0.016136401725308943,"sd":2.6487542263900408},{"tc":"2","rounds":326604,"ev":0.04242752691332623,"sd":2.6500880930787267},{"tc":"3","rounds":188883,"ev":0.06438377196465536,"sd":2.6484523803249163},{"tc":"4","rounds":113117,"ev":0.0956885348798147,"sd":2.646448339108636},{"tc":"5","rounds":65543,"ev":0.10011748012754985,"sd":2.662456582645848},{"tc":"6","rounds":40305,"ev":0.1070090559483935,"sd":2.6521226162189375},{"tc":"7","rounds":22737,"ev":0.1289528081980912,"sd":2.667429991189947},{"tc":">=8","rounds":30222,"ev":0.197736748064324,"sd":2.6642604117424242}] },
+      d6_cut1p5_u1_o1: { label: "6 decks \u00b7 cut 1.5 decks \u00b7 2 players", note: "5M table rounds. Two-player dataset.", userSpots: 1, data: [{"tc":"<=-5","rounds":239093,"ev":-0.08354489675565575,"sd":1.6377665405964508},{"tc":"-4","rounds":194336,"ev":-0.05819817223777375,"sd":1.6467409687407968},{"tc":"-3","rounds":334088,"ev":-0.038133665381576115,"sd":1.6489671027269808},{"tc":"-2","rounds":616161,"ev":-0.02759506038194563,"sd":1.6477615016217877},{"tc":"-1","rounds":932698,"ev":-0.014909434779532067,"sd":1.6516802772576167},{"tc":"0","rounds":1358290,"ev":-0.0057101208136701295,"sd":1.6528623464832888},{"tc":"1","rounds":587654,"ev":0.00436651499011323,"sd":1.6533302749525296},{"tc":"2","rounds":322784,"ev":0.020220952711410726,"sd":1.6584964186067874},{"tc":"3","rounds":183538,"ev":0.027857991260665366,"sd":1.6596902116799457},{"tc":"4","rounds":104047,"ev":0.04748815439176526,"sd":1.6647479189642596},{"tc":"5","rounds":59044,"ev":0.05116523270781113,"sd":1.664965297223672},{"tc":"6","rounds":32175,"ev":0.06703962703962704,"sd":1.6709445846456141},{"tc":"7","rounds":17433,"ev":0.061492571559685655,"sd":1.6761232316126566},{"tc":">=8","rounds":18659,"ev":0.09775443485717349,"sd":1.6818258791365892}] },
+      d6_cut1p5_u2_o1: { label: "6 decks \u00b7 cut 1.5 decks \u00b7 2 players \u00b7 two-hand data", note: "5M table rounds. Hidden two-player support dataset.", userSpots: 2, data: [{"tc":"<=-5","rounds":237957,"ev":-0.15875137104602932,"sd":2.640833910158491},{"tc":"-4","rounds":193595,"ev":-0.11076215811358764,"sd":2.6444985131165257},{"tc":"-3","rounds":333242,"ev":-0.08174239741689222,"sd":2.647657979555499},{"tc":"-2","rounds":616164,"ev":-0.053790873858258516,"sd":2.6429806442248815},{"tc":"-1","rounds":918195,"ev":-0.030812626947434914,"sd":2.6465710135706986},{"tc":"0","rounds":1388923,"ev":-0.012229619640541629,"sd":2.6464649062436716},{"tc":"1","rounds":581271,"ev":0.020874944733179534,"sd":2.648173542744271},{"tc":"2","rounds":318654,"ev":0.039566426280542535,"sd":2.650911361024432},{"tc":"3","rounds":181226,"ev":0.06588458609691766,"sd":2.6510448282169308},{"tc":"4","rounds":103500,"ev":0.10038647342995169,"sd":2.6492237210300376},{"tc":"5","rounds":58847,"ev":0.10856968069740174,"sd":2.658880240488699},{"tc":"6","rounds":32111,"ev":0.13453333748559684,"sd":2.6486912348276186},{"tc":"7","rounds":17509,"ev":0.1743674681592324,"sd":2.6632399226478114},{"tc":">=8","rounds":18806,"ev":0.20195682229075826,"sd":2.6863293570790727}] },
+      d6_cut1p75_u1_o1: { label: "6 decks \u00b7 cut 1.75 decks \u00b7 2 players", note: "5M table rounds. Two-player dataset.", userSpots: 1, data: [{"tc":"<=-5","rounds":204730,"ev":-0.08252332340155326,"sd":1.63904212419871},{"tc":"-4","rounds":186686,"ev":-0.053646229497659174,"sd":1.6441380796708454},{"tc":"-3","rounds":337223,"ev":-0.03768426234272277,"sd":1.6503158212801075},{"tc":"-2","rounds":622912,"ev":-0.02693799445186479,"sd":1.6516396040755106},{"tc":"-1","rounds":969389,"ev":-0.013547708917679074,"sd":1.6546915489362455},{"tc":"0","rounds":1404086,"ev":-0.0034071987043528674,"sd":1.6552687328208944},{"tc":"1","rounds":587660,"ev":0.006724977027532927,"sd":1.654039381808313},{"tc":"2","rounds":320810,"ev":0.021854056918425235,"sd":1.661371848904614},{"tc":"3","rounds":172298,"ev":0.026442558822505194,"sd":1.665018657164918},{"tc":"4","rounds":93893,"ev":0.04657429201324913,"sd":1.666588198050287},{"tc":"5","rounds":50213,"ev":0.06494334136578177,"sd":1.669655229770054},{"tc":"6","rounds":25721,"ev":0.06659927685548774,"sd":1.6667097423884336},{"tc":"7","rounds":13028,"ev":0.06731654897144612,"sd":1.6750522605953277},{"tc":">=8","rounds":11351,"ev":0.0955862919566558,"sd":1.6782220622476327}] },
+      d6_cut1p75_u2_o1: { label: "6 decks \u00b7 cut 1.75 decks \u00b7 2 players \u00b7 two-hand data", note: "5M table rounds. Hidden two-player support dataset.", userSpots: 2, data: [{"tc":"<=-5","rounds":201162,"ev":-0.14438611666219267,"sd":2.6457788418172914},{"tc":"-4","rounds":183781,"ev":-0.10351450911682927,"sd":2.6454589899734553},{"tc":"-3","rounds":332288,"ev":-0.06623471205701079,"sd":2.643808520589712},{"tc":"-2","rounds":618139,"ev":-0.05510087536945574,"sd":2.641761081748917},{"tc":"-1","rounds":953676,"ev":-0.029579228165540497,"sd":2.6485337449839674},{"tc":"0","rounds":1438025,"ev":-0.012885728690391335,"sd":2.6476795903170105},{"tc":"1","rounds":586824,"ev":0.022937030523632298,"sd":2.649222348139929},{"tc":"2","rounds":319570,"ev":0.03908689801921332,"sd":2.6503780993867276},{"tc":"3","rounds":172806,"ev":0.06566901612212539,"sd":2.648880232284807},{"tc":"4","rounds":94353,"ev":0.08665331256027896,"sd":2.643476053446767},{"tc":"5","rounds":49357,"ev":0.1413376015560103,"sd":2.646520915474815},{"tc":"6","rounds":25862,"ev":0.1183203155208414,"sd":2.678345410203584},{"tc":"7","rounds":12897,"ev":0.20702488950918818,"sd":2.680171137324591},{"tc":">=8","rounds":11260,"ev":0.19520426287744228,"sd":2.67075705617821}] },
+      d6_cut2_u1_o1: { label: "6 decks \u00b7 cut 2 decks \u00b7 2 players", note: "5M table rounds. Two-player dataset.", userSpots: 1, data: [{"tc":"<=-5","rounds":171849,"ev":-0.07126605333752306,"sd":1.6442366492146154},{"tc":"-4","rounds":173877,"ev":-0.05176072741075588,"sd":1.646664459301788},{"tc":"-3","rounds":329013,"ev":-0.03781613492475981,"sd":1.6514983846208893},{"tc":"-2","rounds":629581,"ev":-0.030639425268551623,"sd":1.6459686807232703},{"tc":"-1","rounds":1009846,"ev":-0.01703428047444858,"sd":1.653330852155136},{"tc":"0","rounds":1452310,"ev":-0.004518319091653985,"sd":1.6564195587735142},{"tc":"1","rounds":591351,"ev":0.00950027986762515,"sd":1.659345769426444},{"tc":"2","rounds":314423,"ev":0.01665272578659958,"sd":1.6600486517333632},{"tc":"3","rounds":163572,"ev":0.03237717946836867,"sd":1.6645669355814237},{"tc":"4","rounds":85949,"ev":0.053008179269101445,"sd":1.6674388266716575},{"tc":"5","rounds":41908,"ev":0.05516846425503484,"sd":1.673676878880556},{"tc":"6","rounds":20182,"ev":0.06743632940243782,"sd":1.659159541242544},{"tc":"7","rounds":9209,"ev":0.07036594635682485,"sd":1.6723854029219052},{"tc":">=8","rounds":6930,"ev":0.0784992784992785,"sd":1.6742380572995892}] },
+      d6_cut2_u2_o1: { label: "6 decks \u00b7 cut 2 decks \u00b7 2 players \u00b7 two-hand data", note: "5M table rounds. Hidden two-player support dataset.", userSpots: 2, data: [{"tc":"<=-5","rounds":170636,"ev":-0.14086710893363652,"sd":2.6487122365416464},{"tc":"-4","rounds":172942,"ev":-0.11186409316418221,"sd":2.6478309541262295},{"tc":"-3","rounds":325822,"ev":-0.07383479323065968,"sd":2.6492596853771033},{"tc":"-2","rounds":625795,"ev":-0.055249722353166775,"sd":2.6518250804229746},{"tc":"-1","rounds":991262,"ev":-0.03068411782152448,"sd":2.6461883761717355},{"tc":"0","rounds":1488179,"ev":-0.011944127688940645,"sd":2.6475231900506695},{"tc":"1","rounds":589506,"ev":0.020196571366534015,"sd":2.6525566022319573},{"tc":"2","rounds":311268,"ev":0.03896642121901384,"sd":2.654241474211934},{"tc":"3","rounds":160757,"ev":0.05816231952574383,"sd":2.6507042975930974},{"tc":"4","rounds":84471,"ev":0.09882681630382024,"sd":2.6596750613673605},{"tc":"5","rounds":42168,"ev":0.08807626636311895,"sd":2.6487831347834154},{"tc":"6","rounds":20682,"ev":0.15917222705734455,"sd":2.6606583479340697},{"tc":"7","rounds":9379,"ev":0.14020684507943276,"sd":2.6467108178236685},{"tc":">=8","rounds":7133,"ev":0.19346698443852517,"sd":2.661284640958941}] },
+      d6_cut1_tc0p5deck_u1_o0: { label: "6 decks \u00b7 cut 1 deck (52 cards ~83%) \u00b7 heads-up \u00b7 0.5 deck TC", note: "5M table rounds. Practical integer-TC dataset.", userSpots: 1, data: [{"tc":"<=-5","rounds":220989,"ev":-0.09254759286661327,"sd":1.6445122855350354},{"tc":"-4","rounds":147749,"ev":-0.060156075506433204,"sd":1.6446108217332525},{"tc":"-3","rounds":193655,"ev":-0.048090676718907335,"sd":1.6405645282744208},{"tc":"-2","rounds":393208,"ev":-0.03888781510040488,"sd":1.649393829912287},{"tc":"-1","rounds":573083,"ev":-0.025022553452117756,"sd":1.649767698865636},{"tc":"0","rounds":2011399,"ev":-0.009342253824328241,"sd":1.654353603068701},{"tc":"1","rounds":540953,"ev":0.006662316319532381,"sd":1.6564805539289886},{"tc":"2","rounds":377222,"ev":0.01714640185355043,"sd":1.6580282993556554},{"tc":"3","rounds":185296,"ev":0.027491149296261116,"sd":1.6632354010858361},{"tc":"4","rounds":142939,"ev":0.04389984538859234,"sd":1.665009368289175},{"tc":"5","rounds":69548,"ev":0.05104388336113188,"sd":1.6703890239106876},{"tc":"6","rounds":57579,"ev":0.06787196721026763,"sd":1.6600317211858133},{"tc":"7","rounds":27508,"ev":0.06765304638650574,"sd":1.6632603928822611},{"tc":">=8","rounds":58872,"ev":0.09058635684196223,"sd":1.680432532124528}] },
+      d6_cut1_exactint_u1_o0: { label: "6 decks \u00b7 cut 1 deck (52 cards ~83%) \u00b7 heads-up \u00b7 exact int TC", note: "20M table rounds. Exact decks, integer-truncated TC dataset.", userSpots: 1, data: [{"tc":"<=-5","rounds":805827,"ev":-0.09049833276869601,"sd":1.6425956481453468},{"tc":"-4","rounds":507718,"ev":-0.06561122512891014,"sd":1.6426784023887369},{"tc":"-3","rounds":809025,"ev":-0.053029263619789255,"sd":1.643544290200932},{"tc":"-2","rounds":1379827,"ev":-0.03856570425133006,"sd":1.6470194989040314},{"tc":"-1","rounds":2368317,"ev":-0.023869693119628832,"sd":1.6511568655396278},{"tc":"0","rounds":8562723,"ev":-0.007702339547828419,"sd":1.653391909027725},{"tc":"1","rounds":2235214,"ev":0.008830921781985976,"sd":1.6572901673417124},{"tc":"2","rounds":1307404,"ev":0.021747677076098895,"sd":1.6605127981614907},{"tc":"3","rounds":770889,"ev":0.03260910455331442,"sd":1.6630887470650837},{"tc":"4","rounds":483341,"ev":0.042086228977057605,"sd":1.6626024610605663},{"tc":"5","rounds":293543,"ev":0.0543123154018321,"sd":1.6678455078651608},{"tc":"6","rounds":184812,"ev":0.06483886327727637,"sd":1.6770353120743244},{"tc":"7","rounds":112352,"ev":0.07921532326972372,"sd":1.6796150548909226},{"tc":">=8","rounds":179008,"ev":0.10310712370396853,"sd":1.6825846423613957}] },
+      d6_cut1_exactint_u2_o0: { label: "6 decks \u00b7 cut 1 deck (52 cards ~83%) \u00b7 heads-up \u00b7 exact int TC \u00b7 two-hand data", note: "20M table rounds. Hidden exact-decks integer-TC support dataset.", userSpots: 2, data: [{"tc":"<=-5","rounds":799809,"ev":-0.18746100631525778,"sd":2.6487049655909987},{"tc":"-4","rounds":505941,"ev":-0.12696342063600302,"sd":2.642273504773877},{"tc":"-3","rounds":807121,"ev":-0.10209497708522018,"sd":2.645841938924027},{"tc":"-2","rounds":1374517,"ev":-0.0743170146313214,"sd":2.644923975918793},{"tc":"-1","rounds":2348782,"ev":-0.05222621767367087,"sd":2.644124842940843},{"tc":"0","rounds":8619077,"ev":-0.01708721247066246,"sd":2.647547550552656},{"tc":"1","rounds":2225250,"ev":0.015803168183350185,"sd":2.6465685380801105},{"tc":"2","rounds":1302064,"ev":0.0423028361125106,"sd":2.6510408824904017},{"tc":"3","rounds":769643,"ev":0.06184555696602191,"sd":2.649346160175507},{"tc":"4","rounds":481630,"ev":0.08368249486120051,"sd":2.651367872449353},{"tc":"5","rounds":292177,"ev":0.10195532160300091,"sd":2.6501929946328557},{"tc":"6","rounds":183170,"ev":0.12983567178031338,"sd":2.660798879008019},{"tc":"7","rounds":112137,"ev":0.156906284277268,"sd":2.656124491649923},{"tc":">=8","rounds":178682,"ev":0.20650653115590825,"sd":2.6661834600108825}] },
+      d6_cut1_tc1deck_u1_o0: { label: "6 decks \u00b7 cut 1 deck (52 cards ~83%) \u00b7 heads-up \u00b7 1 deck TC", note: "20M table rounds. Practical integer-TC dataset.", userSpots: 1, data: [{"tc":"<=-5","rounds":993162,"ev":-0.08977890817409445,"sd":1.642440294703159},{"tc":"-4","rounds":536395,"ev":-0.05597740471108045,"sd":1.6436967093634731},{"tc":"-3","rounds":874203,"ev":-0.05034071033844542,"sd":1.6462155722437302},{"tc":"-2","rounds":1468002,"ev":-0.03471453036167526,"sd":1.6485053253426225},{"tc":"-1","rounds":2512888,"ev":-0.02172798787689702,"sd":1.6509326328356748},{"tc":"0","rounds":7560327,"ev":-0.008129410275507924,"sd":1.6528149013036613},{"tc":"1","rounds":2380632,"ev":0.006879265673989092,"sd":1.6574824076754},{"tc":"2","rounds":1386242,"ev":0.01614364591463828,"sd":1.6594382899702405},{"tc":"3","rounds":831023,"ev":0.027603327465064144,"sd":1.6604489534632578},{"tc":"4","rounds":510807,"ev":0.03491925521772411,"sd":1.66011343347304},{"tc":"5","rounds":320664,"ev":0.04625714143152958,"sd":1.6633191826080391},{"tc":"6","rounds":205213,"ev":0.059859755473581105,"sd":1.6650557147642693},{"tc":"7","rounds":133481,"ev":0.06884125830642564,"sd":1.675574161986072},{"tc":">=8","rounds":286961,"ev":0.09096009562275013,"sd":1.6825794983170455}] },
+      d6_cut1_tc0p5deck_u2_o0: { label: "6 decks \u00b7 cut 1 deck (52 cards ~83%) \u00b7 heads-up \u00b7 0.5 deck TC \u00b7 two-hand data", note: "5M table rounds. Hidden practical integer-TC support dataset.", userSpots: 2, data: [{"tc":"<=-5","rounds":222560,"ev":-0.18222951114306254,"sd":2.6429071669506343},{"tc":"-4","rounds":147803,"ev":-0.10936178562004831,"sd":2.649011386958503},{"tc":"-3","rounds":193056,"ev":-0.10046825791480192,"sd":2.6399511638884774},{"tc":"-2","rounds":391709,"ev":-0.06574268142932636,"sd":2.645039107936667},{"tc":"-1","rounds":567770,"ev":-0.051124575092026704,"sd":2.646256198635728},{"tc":"0","rounds":2027235,"ev":-0.016136757701993108,"sd":2.6466408801785235},{"tc":"1","rounds":539065,"ev":0.013534545926743528,"sd":2.644108800383567},{"tc":"2","rounds":373531,"ev":0.04119872246212496,"sd":2.645823149182331},{"tc":"3","rounds":184600,"ev":0.06496749729144095,"sd":2.6520172056314495},{"tc":"4","rounds":141636,"ev":0.08216837527182355,"sd":2.6509868194176067},{"tc":"5","rounds":69260,"ev":0.10882183078255847,"sd":2.6558301115840908},{"tc":"6","rounds":56809,"ev":0.12566670773997077,"sd":2.636055946900782},{"tc":"7","rounds":27421,"ev":0.1470770577294774,"sd":2.6372941266014807},{"tc":">=8","rounds":57545,"ev":0.18978190980971413,"sd":2.669296472361818}] },
+      d6_cut1_tc1deck_u2_o0: { label: "6 decks \u00b7 cut 1 deck (52 cards ~83%) \u00b7 heads-up \u00b7 1 deck TC \u00b7 two-hand data", note: "20M table rounds. Hidden practical integer-TC support dataset.", userSpots: 2, data: [{"tc":"<=-5","rounds":985198,"ev":-0.17428983818481159,"sd":2.646016527913016},{"tc":"-4","rounds":532628,"ev":-0.11649781836478743,"sd":2.6454650732824807},{"tc":"-3","rounds":866582,"ev":-0.08704427278664915,"sd":2.648367640102702},{"tc":"-2","rounds":1453397,"ev":-0.06911600890878404,"sd":2.643828680965225},{"tc":"-1","rounds":2496890,"ev":-0.049001357688965075,"sd":2.644285424692419},{"tc":"0","rounds":7627206,"ev":-0.018278908423346635,"sd":2.646996592360745},{"tc":"1","rounds":2366510,"ev":0.01714507861788034,"sd":2.648699771470815},{"tc":"2","rounds":1383038,"ev":0.0352014912099306,"sd":2.6461553625148273},{"tc":"3","rounds":830333,"ev":0.06718629754568348,"sd":2.6495453549193693},{"tc":"4","rounds":509788,"ev":0.08167708929986582,"sd":2.651179990889991},{"tc":"5","rounds":321640,"ev":0.10218878248974009,"sd":2.6514581374450508},{"tc":"6","rounds":205597,"ev":0.1123265417296945,"sd":2.6590634438366987},{"tc":"7","rounds":134318,"ev":0.12598460370166323,"sd":2.6650159669134954},{"tc":">=8","rounds":286875,"ev":0.17794858387799564,"sd":2.6680146284244963}] },
+      d6_cut1p25_tc0p5deck_u1_o0: { label: "6 decks \u00b7 cut 1.25 decks (65 cards ~79%) \u00b7 heads-up \u00b7 0.5 deck TC", note: "5M table rounds. Practical integer-TC dataset.", userSpots: 1, data: [{"tc":"<=-5","rounds":178875,"ev":-0.0935737246680643,"sd":1.6450501966585211},{"tc":"-4","rounds":144804,"ev":-0.06770531200795558,"sd":1.6430277496713557},{"tc":"-3","rounds":189928,"ev":-0.042142285497662274,"sd":1.6461626869488322},{"tc":"-2","rounds":400078,"ev":-0.0376176645554117,"sd":1.648405221301864},{"tc":"-1","rounds":585544,"ev":-0.02150137308212534,"sd":1.651999392721688},{"tc":"0","rounds":2089231,"ev":-0.008786486511065554,"sd":1.6523083998966563},{"tc":"1","rounds":550717,"ev":0.007012676202114698,"sd":1.6548229547012132},{"tc":"2","rounds":377984,"ev":0.02024953437182526,"sd":1.659488568265327},{"tc":"3","rounds":179285,"ev":0.026667038514097664,"sd":1.665387121475721},{"tc":"4","rounds":136083,"ev":0.03681576684817354,"sd":1.659785814551227},{"tc":"5","rounds":61541,"ev":0.046830568239060136,"sd":1.6724178401131928},{"tc":"6","rounds":49903,"ev":0.07374306153938641,"sd":1.6778539826234855},{"tc":"7","rounds":20880,"ev":0.06992337164750957,"sd":1.6844725841783244},{"tc":">=8","rounds":35147,"ev":0.09759012148974308,"sd":1.6705604054521457}] },
+      d6_cut1p25_exactint_u1_o0: { label: "6 decks \u00b7 cut 1.25 decks (65 cards ~79%) \u00b7 heads-up \u00b7 exact int TC", note: "20M table rounds. Exact decks, integer-truncated TC dataset.", userSpots: 1, data: [{"tc":"<=-5","rounds":676714,"ev":-0.09171082613925528,"sd":1.640266811265794},{"tc":"-4","rounds":480773,"ev":-0.0643546954591876,"sd":1.641551520459304},{"tc":"-3","rounds":798503,"ev":-0.04781322048883974,"sd":1.644486976295921},{"tc":"-2","rounds":1389087,"ev":-0.03938774173251927,"sd":1.646218741526966},{"tc":"-1","rounds":2416906,"ev":-0.024571497608926456,"sd":1.6511517331451866},{"tc":"0","rounds":8794660,"ev":-0.00763940845922412,"sd":1.6540890460241624},{"tc":"1","rounds":2282739,"ev":0.00910353746091866,"sd":1.6570739926632914},{"tc":"2","rounds":1315791,"ev":0.023486252755946804,"sd":1.6624319382828525},{"tc":"3","rounds":754956,"ev":0.03164422827290597,"sd":1.6619822025965896},{"tc":"4","rounds":453187,"ev":0.039729736289875923,"sd":1.662807424455111},{"tc":"5","rounds":263504,"ev":0.055665189143238814,"sd":1.6632293383043362},{"tc":"6","rounds":159762,"ev":0.06643632403199759,"sd":1.6687600519606374},{"tc":"7","rounds":91690,"ev":0.07447922347038935,"sd":1.6799692458030113},{"tc":">=8","rounds":121728,"ev":0.10134069400630914,"sd":1.6865415775368249}] },
+      d6_cut1p25_exactint_u2_o0: { label: "6 decks \u00b7 cut 1.25 decks (65 cards ~79%) \u00b7 heads-up \u00b7 exact int TC \u00b7 two-hand data", note: "20M table rounds. Hidden exact-decks integer-TC support dataset.", userSpots: 2, data: [{"tc":"<=-5","rounds":666630,"ev":-0.18470665886623763,"sd":2.6445308603742257},{"tc":"-4","rounds":478101,"ev":-0.12615953532830929,"sd":2.645979943247188},{"tc":"-3","rounds":793785,"ev":-0.10106892924406483,"sd":2.6416244839063716},{"tc":"-2","rounds":1383825,"ev":-0.07506368218524741,"sd":2.6445947285643276},{"tc":"-1","rounds":2401071,"ev":-0.05245367588047167,"sd":2.645152887263375},{"tc":"0","rounds":8840404,"ev":-0.018420651363896944,"sd":2.6472885253763048},{"tc":"1","rounds":2272170,"ev":0.013592292830201965,"sd":2.6488530124602754},{"tc":"2","rounds":1312466,"ev":0.0366592353630494,"sd":2.6502276608157893},{"tc":"3","rounds":755748,"ev":0.06590821279050689,"sd":2.651117932144898},{"tc":"4","rounds":456860,"ev":0.08001794860569977,"sd":2.651643375336904},{"tc":"5","rounds":263687,"ev":0.10320569463037617,"sd":2.656925560475084},{"tc":"6","rounds":160599,"ev":0.13428477138711947,"sd":2.662732405872023},{"tc":"7","rounds":92084,"ev":0.1435102732287911,"sd":2.6593119181748737},{"tc":">=8","rounds":122570,"ev":0.2025781186260912,"sd":2.6711344958838885}] },
+      d6_cut1p25_tc1deck_u1_o0: { label: "6 decks \u00b7 cut 1.25 decks (65 cards ~79%) \u00b7 heads-up \u00b7 1 deck TC", note: "20M table rounds. Practical integer-TC dataset.", userSpots: 1, data: [{"tc":"<=-5","rounds":813626,"ev":-0.08751195266621273,"sd":1.6388988985224235},{"tc":"-4","rounds":509611,"ev":-0.05747913604690637,"sd":1.6457371603622075},{"tc":"-3","rounds":856906,"ev":-0.05108028185121822,"sd":1.6449794645281053},{"tc":"-2","rounds":1471548,"ev":-0.03508550179810648,"sd":1.6481722379840569},{"tc":"-1","rounds":2565202,"ev":-0.024012144072864436,"sd":1.6503336280997625},{"tc":"0","rounds":7861815,"ev":-0.009400373832251204,"sd":1.6536584470901032},{"tc":"1","rounds":2432874,"ev":0.008143043988303546,"sd":1.6575746088832444},{"tc":"2","rounds":1399892,"ev":0.01723918702299892,"sd":1.6578354639816906},{"tc":"3","rounds":820028,"ev":0.02794538723067993,"sd":1.6623690949078924},{"tc":"4","rounds":487355,"ev":0.039355295421202204,"sd":1.6621097150963098},{"tc":"5","rounds":293740,"ev":0.05109961190168176,"sd":1.6661278892925464},{"tc":"6","rounds":178396,"ev":0.06096549249983183,"sd":1.6693022453871844},{"tc":"7","rounds":108762,"ev":0.07177139074309041,"sd":1.6728863347817986},{"tc":">=8","rounds":200245,"ev":0.0815600888911084,"sd":1.6726095525599782}] },
+      d6_cut1p25_tc0p5deck_u2_o0: { label: "6 decks \u00b7 cut 1.25 decks (65 cards ~79%) \u00b7 heads-up \u00b7 0.5 deck TC \u00b7 two-hand data", note: "5M table rounds. Hidden practical integer-TC support dataset.", userSpots: 2, data: [{"tc":"<=-5","rounds":172892,"ev":-0.17727830090461097,"sd":2.646691639246662},{"tc":"-4","rounds":141979,"ev":-0.12618063234703725,"sd":2.6371726781017193},{"tc":"-3","rounds":188399,"ev":-0.10002707020737903,"sd":2.6471803264233986},{"tc":"-2","rounds":395539,"ev":-0.06913351148685717,"sd":2.6434710805995376},{"tc":"-1","rounds":579255,"ev":-0.04966724499572727,"sd":2.646181950619098},{"tc":"0","rounds":2105183,"ev":-0.01935936210771225,"sd":2.6476886466943785},{"tc":"1","rounds":553130,"ev":0.02204183465008226,"sd":2.6494479691362516},{"tc":"2","rounds":379403,"ev":0.03796754374635941,"sd":2.6483576415424803},{"tc":"3","rounds":181114,"ev":0.04833971973453184,"sd":2.64441723029879},{"tc":"4","rounds":137134,"ev":0.08020622165181501,"sd":2.6498834563761497},{"tc":"5","rounds":61083,"ev":0.1362408526103826,"sd":2.6638233319700486},{"tc":"6","rounds":49600,"ev":0.1348991935483871,"sd":2.659365637643077},{"tc":"7","rounds":20376,"ev":0.16244601491951316,"sd":2.6647547593529004},{"tc":">=8","rounds":34913,"ev":0.17234268037693695,"sd":2.6736595022490217}] },
+      d6_cut1p25_tc1deck_u2_o0: { label: "6 decks \u00b7 cut 1.25 decks (65 cards ~79%) \u00b7 heads-up \u00b7 1 deck TC \u00b7 two-hand data", note: "20M table rounds. Hidden practical integer-TC support dataset.", userSpots: 2, data: [{"tc":"<=-5","rounds":808181,"ev":-0.17637385684642426,"sd":2.6467136814630234},{"tc":"-4","rounds":506437,"ev":-0.11919350284438143,"sd":2.6430362968139813},{"tc":"-3","rounds":852764,"ev":-0.095231506020423,"sd":2.645568308976039},{"tc":"-2","rounds":1459164,"ev":-0.06968373671499571,"sd":2.644249371103755},{"tc":"-1","rounds":2545391,"ev":-0.04919637100940484,"sd":2.6464010546234884},{"tc":"0","rounds":7928037,"ev":-0.01784350905526803,"sd":2.6477752877552256},{"tc":"1","rounds":2426902,"ev":0.01212945557752229,"sd":2.6470377137081784},{"tc":"2","rounds":1394089,"ev":0.036719319928641574,"sd":2.6480265608886535},{"tc":"3","rounds":815372,"ev":0.059913757156242795,"sd":2.6498706943955},{"tc":"4","rounds":485804,"ev":0.08522161200813497,"sd":2.6540074970886702},{"tc":"5","rounds":292334,"ev":0.09441255550158381,"sd":2.652063711723065},{"tc":"6","rounds":177204,"ev":0.11599625290625494,"sd":2.654701637827204},{"tc":"7","rounds":107883,"ev":0.1281202784498021,"sd":2.6589511891145543},{"tc":">=8","rounds":200438,"ev":0.1807890719324679,"sd":2.6702441060974653}] },
+      d6_cut1p5_tc0p5deck_u1_o0: { label: "6 decks \u00b7 cut 1.5 decks (78 cards ~75%) \u00b7 heads-up \u00b7 0.5 deck TC", note: "5M table rounds. Practical integer-TC dataset.", userSpots: 1, data: [{"tc":"<=-5","rounds":146466,"ev":-0.08828670135048407,"sd":1.6443372585222795},{"tc":"-4","rounds":129222,"ev":-0.06334834625682934,"sd":1.6463530385401375},{"tc":"-3","rounds":185243,"ev":-0.04554558066971492,"sd":1.6530638307339836},{"tc":"-2","rounds":391149,"ev":-0.034255488317751034,"sd":1.6526635461121246},{"tc":"-1","rounds":598021,"ev":-0.02434362672882725,"sd":1.6501061208539636},{"tc":"0","rounds":2167057,"ev":-0.009721017951996648,"sd":1.6538170690508693},{"tc":"1","rounds":569949,"ev":0.008469178821262954,"sd":1.658113669130518},{"tc":"2","rounds":372422,"ev":0.024348722685555633,"sd":1.6586999081659255},{"tc":"3","rounds":177630,"ev":0.022766424590440804,"sd":1.6606386500711732},{"tc":"4","rounds":123635,"ev":0.039940146398673514,"sd":1.6622499761690535},{"tc":"5","rounds":56768,"ev":0.05776141488162345,"sd":1.6697221632965273},{"tc":"6","rounds":40555,"ev":0.06845025274318826,"sd":1.6690853603220976},{"tc":"7","rounds":17339,"ev":0.0657477363169733,"sd":1.650692287148844},{"tc":">=8","rounds":24544,"ev":0.08678292046936115,"sd":1.6852564565828112}] },
+      d6_cut1p5_exactint_u1_o0: { label: "6 decks \u00b7 cut 1.5 decks (78 cards ~75%) \u00b7 heads-up \u00b7 exact int TC", note: "20M table rounds. Exact decks, integer-truncated TC dataset.", userSpots: 1, data: [{"tc":"<=-5","rounds":541987,"ev":-0.0883120812860825,"sd":1.640702320870478},{"tc":"-4","rounds":440731,"ev":-0.057894724900222586,"sd":1.648926097103784},{"tc":"-3","rounds":772430,"ev":-0.04757453749854356,"sd":1.6454213218680698},{"tc":"-2","rounds":1367539,"ev":-0.03996741592013098,"sd":1.646296558335154},{"tc":"-1","rounds":2486972,"ev":-0.02598581729106721,"sd":1.6500898440129437},{"tc":"0","rounds":9082015,"ev":-0.008643346217772158,"sd":1.6540552113193407},{"tc":"1","rounds":2349680,"ev":0.009640461679888326,"sd":1.6569241114975575},{"tc":"2","rounds":1294826,"ev":0.018887479862159086,"sd":1.65895276950352},{"tc":"3","rounds":735361,"ev":0.03129483342195194,"sd":1.6633398225689286},{"tc":"4","rounds":416746,"ev":0.04711502929842158,"sd":1.6666782698248301},{"tc":"5","rounds":237031,"ev":0.05158818888668571,"sd":1.6708377809139745},{"tc":"6","rounds":128734,"ev":0.0639147389190113,"sd":1.6720682908106972},{"tc":"7","rounds":70826,"ev":0.08444638974387937,"sd":1.6711802394904571},{"tc":">=8","rounds":75122,"ev":0.087351241979713,"sd":1.6769088002589925}] },
+      d6_cut1p5_exactint_u2_o0: { label: "6 decks \u00b7 cut 1.5 decks (78 cards ~75%) \u00b7 heads-up \u00b7 exact int TC \u00b7 two-hand data", note: "20M table rounds. Hidden exact-decks integer-TC support dataset.", userSpots: 2, data: [{"tc":"<=-5","rounds":539137,"ev":-0.1737517551197562,"sd":2.6432181101741388},{"tc":"-4","rounds":436165,"ev":-0.1238567973129435,"sd":2.6426393896689504},{"tc":"-3","rounds":765991,"ev":-0.09751289506012473,"sd":2.64483420046962},{"tc":"-2","rounds":1355773,"ev":-0.07605771762677085,"sd":2.6465971602030516},{"tc":"-1","rounds":2471251,"ev":-0.048339080085349484,"sd":2.6477355209383653},{"tc":"0","rounds":9151957,"ev":-0.018497573797604163,"sd":2.647341384038399},{"tc":"1","rounds":2342146,"ev":0.0192981137811221,"sd":2.6484438386706164},{"tc":"2","rounds":1287508,"ev":0.044043998173215235,"sd":2.6509489309248906},{"tc":"3","rounds":729534,"ev":0.05696924338002067,"sd":2.6518311870340363},{"tc":"4","rounds":413871,"ev":0.08724457620852874,"sd":2.6533690097550564},{"tc":"5","rounds":233942,"ev":0.12012379136709099,"sd":2.657940876823969},{"tc":"6","rounds":127625,"ev":0.14306758080313417,"sd":2.6560429191895247},{"tc":"7","rounds":70241,"ev":0.14571261798664598,"sd":2.649538499647434},{"tc":">=8","rounds":74859,"ev":0.2039033382759588,"sd":2.6736230702923396}] },
+      d6_cut1p5_tc1deck_u1_o0: { label: "6 decks \u00b7 cut 1.5 decks (78 cards ~75%) \u00b7 heads-up \u00b7 1 deck TC", note: "20M table rounds. Practical integer-TC dataset.", userSpots: 1, data: [{"tc":"<=-5","rounds":584977,"ev":-0.09035739866695613,"sd":1.641882899676416},{"tc":"-4","rounds":480788,"ev":-0.06179022770951022,"sd":1.6475861625589303},{"tc":"-3","rounds":845869,"ev":-0.04660650762706755,"sd":1.646676157731026},{"tc":"-2","rounds":1490127,"ev":-0.033662902557969894,"sd":1.6497503875839057},{"tc":"-1","rounds":2639531,"ev":-0.024961252586160193,"sd":1.6503444071808637},{"tc":"0","rounds":8234507,"ev":-0.009675260461858858,"sd":1.6536178528602925},{"tc":"1","rounds":2509590,"ev":0.008101323323730172,"sd":1.6572826595415662},{"tc":"2","rounds":1407030,"ev":0.01753196449258367,"sd":1.6603167212157819},{"tc":"3","rounds":798761,"ev":0.028281300664403996,"sd":1.661032646770921},{"tc":"4","rounds":455608,"ev":0.04547769134870327,"sd":1.6653544464704297},{"tc":"5","rounds":257400,"ev":0.05553224553224553,"sd":1.6689287936018404},{"tc":"6","rounds":142783,"ev":0.06553301163303754,"sd":1.6665077392578789},{"tc":"7","rounds":76619,"ev":0.06892546235268014,"sd":1.6722113496076485},{"tc":">=8","rounds":76410,"ev":0.08895432535008507,"sd":1.676962222643437}] },
+      d6_cut1p5_tc0p5deck_u2_o0: { label: "6 decks \u00b7 cut 1.5 decks (78 cards ~75%) \u00b7 heads-up \u00b7 0.5 deck TC \u00b7 two-hand data", note: "5M table rounds. Hidden practical integer-TC support dataset.", userSpots: 2, data: [{"tc":"<=-5","rounds":145336,"ev":-0.18468239114878626,"sd":2.649244167725942},{"tc":"-4","rounds":129119,"ev":-0.12292536342443793,"sd":2.6398461942337614},{"tc":"-3","rounds":184610,"ev":-0.09041222035642706,"sd":2.6449772209562097},{"tc":"-2","rounds":389824,"ev":-0.0696827286159908,"sd":2.6451205929754638},{"tc":"-1","rounds":596460,"ev":-0.047071052543339036,"sd":2.6478316338998455},{"tc":"0","rounds":2181591,"ev":-0.019442232755819033,"sd":2.6473360343976275},{"tc":"1","rounds":566763,"ev":0.009681295356260024,"sd":2.6457942842178968},{"tc":"2","rounds":371262,"ev":0.040831003442312976,"sd":2.649339573288124},{"tc":"3","rounds":175964,"ev":0.06520651951535542,"sd":2.6491105504710433},{"tc":"4","rounds":121954,"ev":0.07279794020696329,"sd":2.6493249531973944},{"tc":"5","rounds":55850,"ev":0.0957385854968666,"sd":2.6473651561635587},{"tc":"6","rounds":39944,"ev":0.11946725415581815,"sd":2.6426832654249566},{"tc":"7","rounds":16955,"ev":0.13606605721026246,"sd":2.6616214197165955},{"tc":">=8","rounds":24368,"ev":0.17847176625082076,"sd":2.648579153408228}] },
+      d6_cut1p5_tc1deck_u2_o0: { label: "6 decks \u00b7 cut 1.5 decks (78 cards ~75%) \u00b7 heads-up \u00b7 1 deck TC \u00b7 two-hand data", note: "20M table rounds. Hidden practical integer-TC support dataset.", userSpots: 2, data: [{"tc":"<=-5","rounds":582822,"ev":-0.17072794094938076,"sd":2.6469805591837337},{"tc":"-4","rounds":476515,"ev":-0.12664868891850203,"sd":2.643386464860962},{"tc":"-3","rounds":837067,"ev":-0.09867907825777388,"sd":2.640859609452229},{"tc":"-2","rounds":1477646,"ev":-0.07237728116206453,"sd":2.6474846543301664},{"tc":"-1","rounds":2625967,"ev":-0.05079309831387828,"sd":2.6452154764893288},{"tc":"0","rounds":8315333,"ev":-0.016362904528297303,"sd":2.647040061562427},{"tc":"1","rounds":2483997,"ev":0.014998005231085222,"sd":2.649071579690135},{"tc":"2","rounds":1399982,"ev":0.03551331374260526,"sd":2.6481150404318807},{"tc":"3","rounds":795510,"ev":0.05604832120275044,"sd":2.6466187357387834},{"tc":"4","rounds":454388,"ev":0.08527734007060045,"sd":2.6535424617655017},{"tc":"5","rounds":256803,"ev":0.11008438374941103,"sd":2.655756073997258},{"tc":"6","rounds":141689,"ev":0.13651730197827636,"sd":2.657302450544863},{"tc":"7","rounds":76593,"ev":0.13902053712480253,"sd":2.6692954480796294},{"tc":">=8","rounds":75688,"ev":0.17861483986893564,"sd":2.669955768130045}] },
+      d6_cut1p75_tc0p5deck_u1_o0: { label: "6 decks \u00b7 cut 1.75 decks (91 cards ~71%) \u00b7 heads-up \u00b7 0.5 deck TC", note: "5M table rounds. Practical integer-TC dataset.", userSpots: 1, data: [{"tc":"<=-5","rounds":115152,"ev":-0.08311622898429902,"sd":1.6398164448724248},{"tc":"-4","rounds":115302,"ev":-0.06192433782588333,"sd":1.6346967428606372},{"tc":"-3","rounds":183963,"ev":-0.05430439816702272,"sd":1.6465903764482739},{"tc":"-2","rounds":385506,"ev":-0.03864271892006869,"sd":1.6491486789119671},{"tc":"-1","rounds":619528,"ev":-0.023440425614338657,"sd":1.6541487862697608},{"tc":"0","rounds":2238488,"ev":-0.007462179828527113,"sd":1.6527876468826335},{"tc":"1","rounds":584750,"ev":0.005941000427533134,"sd":1.6548824524823549},{"tc":"2","rounds":366106,"ev":0.02556090312641694,"sd":1.662953514413836},{"tc":"3","rounds":174551,"ev":0.03282135307159512,"sd":1.6611320045596683},{"tc":"4","rounds":109341,"ev":0.04528036143806989,"sd":1.6655463541488078},{"tc":"5","rounds":50924,"ev":0.060914303668211454,"sd":1.6720394864073507},{"tc":"6","rounds":30233,"ev":0.062117553666523335,"sd":1.6680631081990522},{"tc":"7","rounds":13344,"ev":0.08288369304556355,"sd":1.6857939603167873},{"tc":">=8","rounds":12812,"ev":0.10583827661567281,"sd":1.6804156325643058}] },
+      d6_cut1p75_u1_o0: { label: "6 decks \u00b7 cut 1.75 decks \u00b7 heads-up", note: "5M table rounds. Exact TC heads-up dataset.", userSpots: 1, data: [{"tc":"<=-5","rounds":203054,"ev":-0.07396554611088677,"sd":1.640573568232226},{"tc":"-4","rounds":186726,"ev":-0.05633923502886583,"sd":1.6442511863377511},{"tc":"-3","rounds":339549,"ev":-0.034690133088302426,"sd":1.6495628493074117},{"tc":"-2","rounds":628791,"ev":-0.024162241507909625,"sd":1.6508876631174008},{"tc":"-1","rounds":988197,"ev":-0.01578834989379648,"sd":1.6507582739903306},{"tc":"0","rounds":1368300,"ev":-0.007117591171526712,"sd":1.6541227169888926},{"tc":"1","rounds":590473,"ev":0.009399244334626647,"sd":1.6572811619995347},{"tc":"2","rounds":323018,"ev":0.021166003132952343,"sd":1.6564714053252807},{"tc":"3","rounds":174972,"ev":0.03490844249365613,"sd":1.6623359697172837},{"tc":"4","rounds":96228,"ev":0.03412728104086129,"sd":1.6686418213023442},{"tc":"5","rounds":50068,"ev":0.047315650715027566,"sd":1.675970796356308},{"tc":"6","rounds":26258,"ev":0.07612917967857415,"sd":1.6733703250382619},{"tc":"7","rounds":12843,"ev":0.062212878610916456,"sd":1.668354480820424},{"tc":">=8","rounds":11523,"ev":0.0853076455784084,"sd":1.6745835379426708}] },
+      d6_cut1p75_u2_o0: { label: "6 decks \u00b7 cut 1.75 decks \u00b7 heads-up \u00b7 two-hand data", note: "5M table rounds. Hidden exact TC support dataset.", userSpots: 2, data: [{"tc":"<=-5","rounds":203125,"ev":-0.14097723076923077,"sd":2.6506331096443922},{"tc":"-4","rounds":185123,"ev":-0.09276535060473307,"sd":2.647203517022709},{"tc":"-3","rounds":337715,"ev":-0.07264113231571,"sd":2.644819410066337},{"tc":"-2","rounds":622210,"ev":-0.04843863004451873,"sd":2.6446197172831996},{"tc":"-1","rounds":968654,"ev":-0.028952546523319987,"sd":2.647836674737471},{"tc":"0","rounds":1405532,"ev":-0.009028609807531953,"sd":2.6462416841249343},{"tc":"1","rounds":589024,"ev":0.01710286847395013,"sd":2.6492672078090345},{"tc":"2","rounds":320218,"ev":0.03498241822758246,"sd":2.649898193549099},{"tc":"3","rounds":173819,"ev":0.053245042256600254,"sd":2.6519404647832334},{"tc":"4","rounds":94402,"ev":0.09670345967246456,"sd":2.659110602987804},{"tc":"5","rounds":49689,"ev":0.10112902252007487,"sd":2.6514722383096165},{"tc":"6","rounds":26177,"ev":0.0977957749169118,"sd":2.664445906277334},{"tc":"7","rounds":12994,"ev":0.11628443897183316,"sd":2.6462064089337347},{"tc":">=8","rounds":11318,"ev":0.19093479413323908,"sd":2.697645624689343}] },
+      d6_cut2_u1_o0: { label: "6 decks \u00b7 cut 2 decks \u00b7 heads-up", note: "5M table rounds. Exact TC heads-up dataset.", userSpots: 1, data: [{"tc":"<=-5","rounds":173686,"ev":-0.07321257902191311,"sd":1.6390082193507667},{"tc":"-4","rounds":176637,"ev":-0.0479174804825716,"sd":1.6454581570689066},{"tc":"-3","rounds":332674,"ev":-0.0419990741687057,"sd":1.6488630182126232},{"tc":"-2","rounds":633068,"ev":-0.024883582806270416,"sd":1.6506917137233916},{"tc":"-1","rounds":1026110,"ev":-0.015284910974456929,"sd":1.652932809349051},{"tc":"0","rounds":1413072,"ev":-0.006324518495872821,"sd":1.6530179438709525},{"tc":"1","rounds":594409,"ev":0.00982152019905486,"sd":1.6569127765417186},{"tc":"2","rounds":317961,"ev":0.018952009837684497,"sd":1.6591988290538795},{"tc":"3","rounds":164924,"ev":0.03604690645388179,"sd":1.6616467597804396},{"tc":"4","rounds":87284,"ev":0.04257366756793914,"sd":1.664383725189795},{"tc":"5","rounds":43147,"ev":0.0703409275268269,"sd":1.668423018731672},{"tc":"6","rounds":20763,"ev":0.062274237826903625,"sd":1.6719102518127413},{"tc":"7","rounds":9446,"ev":0.08003387677323735,"sd":1.6663682755770441},{"tc":">=8","rounds":6819,"ev":0.10104120838832674,"sd":1.6884215578478887}] },
+      d6_cut2_u2_o0: { label: "6 decks \u00b7 cut 2 decks \u00b7 heads-up \u00b7 two-hand data", note: "5M table rounds. Hidden exact TC support dataset.", userSpots: 2, data: [{"tc":"<=-5","rounds":171443,"ev":-0.13717678762037527,"sd":2.63641693624143},{"tc":"-4","rounds":175028,"ev":-0.10570880087757388,"sd":2.643126465247275},{"tc":"-3","rounds":330334,"ev":-0.07552658824099245,"sd":2.651972210446699},{"tc":"-2","rounds":629437,"ev":-0.05346841701393468,"sd":2.6464941570744767},{"tc":"-1","rounds":1010058,"ev":-0.029354749925251816,"sd":2.647436853872509},{"tc":"0","rounds":1450609,"ev":-0.010626571322803043,"sd":2.647348581532378},{"tc":"1","rounds":591047,"ev":0.01682776496623788,"sd":2.6483756085371124},{"tc":"2","rounds":313582,"ev":0.035933184940462146,"sd":2.647249756699657},{"tc":"3","rounds":163696,"ev":0.053367217280813214,"sd":2.6530487973202153},{"tc":"4","rounds":85616,"ev":0.0940478415249486,"sd":2.6553901917435563},{"tc":"5","rounds":41932,"ev":0.0791281121816274,"sd":2.6490818358836257},{"tc":"6","rounds":20686,"ev":0.13917625447162332,"sd":2.658531618869388},{"tc":"7","rounds":9413,"ev":0.21937745670880696,"sd":2.6593082324831854},{"tc":">=8","rounds":7119,"ev":0.17558645877229948,"sd":2.655066343778059}] },
+      d6_cut1p75_exactint_u1_o0: { label: "6 decks \u00b7 cut 1.75 decks (91 cards ~71%) \u00b7 heads-up \u00b7 exact int TC", note: "20M table rounds. Exact decks, integer-truncated TC dataset.", userSpots: 1, data: [{"tc":"<=-5","rounds":429481,"ev":-0.08573138276198482,"sd":1.6427061361548407},{"tc":"-4","rounds":404906,"ev":-0.07158945533037298,"sd":1.6434063616847432},{"tc":"-3","rounds":743037,"ev":-0.049966556174187826,"sd":1.645734189353455},{"tc":"-2","rounds":1370843,"ev":-0.03742733485891528,"sd":1.6475215931224212},{"tc":"-1","rounds":2508877,"ev":-0.02449621882619196,"sd":1.6510039925906907},{"tc":"0","rounds":9413367,"ev":-0.009086546822194438,"sd":1.65318723105445},{"tc":"1","rounds":2359699,"ev":0.009545709007801419,"sd":1.6580905282154939},{"tc":"2","rounds":1291034,"ev":0.021385184278647967,"sd":1.6592909010785906},{"tc":"3","rounds":698356,"ev":0.030956990417494803,"sd":1.6621490755918233},{"tc":"4","rounds":377413,"ev":0.044714940926783124,"sd":1.6688781170957394},{"tc":"5","rounds":199780,"ev":0.054049454399839825,"sd":1.6706322106132172},{"tc":"6","rounds":104966,"ev":0.0666310995941543,"sd":1.6774630904795202},{"tc":"7","rounds":52423,"ev":0.06691719283520592,"sd":1.6786288320771519},{"tc":">=8","rounds":45818,"ev":0.1112444890654328,"sd":1.6823190695108419}] },
+      d6_cut1p75_exactint_u2_o0: { label: "6 decks \u00b7 cut 1.75 decks (91 cards ~71%) \u00b7 heads-up \u00b7 exact int TC \u00b7 two-hand data", note: "20M table rounds. Hidden exact-decks integer-TC support dataset.", userSpots: 2, data: [{"tc":"<=-5","rounds":426209,"ev":-0.16816162962302533,"sd":2.6503137690047986},{"tc":"-4","rounds":399072,"ev":-0.12426078502124929,"sd":2.649129872712992},{"tc":"-3","rounds":732483,"ev":-0.10033679962538379,"sd":2.6427308957831843},{"tc":"-2","rounds":1355071,"ev":-0.07771400908144296,"sd":2.644324930611234},{"tc":"-1","rounds":2479805,"ev":-0.05194601994914923,"sd":2.646558352016701},{"tc":"0","rounds":9480402,"ev":-0.016802241086401187,"sd":2.647215606335594},{"tc":"1","rounds":2354257,"ev":0.015675009143011998,"sd":2.648684413517397},{"tc":"2","rounds":1292600,"ev":0.039126566609933466,"sd":2.646457988306745},{"tc":"3","rounds":700045,"ev":0.0635830553750116,"sd":2.6490146623877053},{"tc":"4","rounds":379550,"ev":0.08080885258859176,"sd":2.6548804548790894},{"tc":"5","rounds":198561,"ev":0.09865482144026269,"sd":2.647039156636956},{"tc":"6","rounds":104784,"ev":0.12558214994655673,"sd":2.664224451335932},{"tc":"7","rounds":51952,"ev":0.13312288266091776,"sd":2.6483448430579646},{"tc":">=8","rounds":45209,"ev":0.2028799575305802,"sd":2.670334442840347}] },
+      d6_cut1p75_tc1deck_u1_o0: { label: "6 decks \u00b7 cut 1.75 decks (91 cards ~71%) \u00b7 heads-up \u00b7 1 deck TC", note: "20M table rounds. Practical integer-TC dataset.", userSpots: 1, data: [{"tc":"<=-5","rounds":518360,"ev":-0.07951230804846053,"sd":1.6421005962552486},{"tc":"-4","rounds":443313,"ev":-0.06001177497614552,"sd":1.641672249526246},{"tc":"-3","rounds":803703,"ev":-0.050896910923562556,"sd":1.6467869543182283},{"tc":"-2","rounds":1463041,"ev":-0.03804199608896811,"sd":1.6476612788747589},{"tc":"-1","rounds":2672521,"ev":-0.02485219012310848,"sd":1.6508387341962496},{"tc":"0","rounds":8521718,"ev":-0.008849741331501465,"sd":1.6536647146540713},{"tc":"1","rounds":2527390,"ev":0.005304286239955052,"sd":1.656214102582364},{"tc":"2","rounds":1383381,"ev":0.021415647605395764,"sd":1.6592492805013137},{"tc":"3","rounds":758925,"ev":0.029226866949962117,"sd":1.660859819473121},{"tc":"4","rounds":418876,"ev":0.033346384132774375,"sd":1.6667610403223432},{"tc":"5","rounds":229858,"ev":0.05361571056913399,"sd":1.6648421014992243},{"tc":"6","rounds":125398,"ev":0.06353370867158965,"sd":1.6708267306489937},{"tc":"7","rounds":66970,"ev":0.07167388382857996,"sd":1.6739444348592665},{"tc":">=8","rounds":66546,"ev":0.09413037598052475,"sd":1.6772827854074863}] },
+      d6_cut1p75_tc0p5deck_u2_o0: { label: "6 decks \u00b7 cut 1.75 decks (91 cards ~71%) \u00b7 heads-up \u00b7 0.5 deck TC \u00b7 two-hand data", note: "5M table rounds. Hidden practical integer-TC support dataset.", userSpots: 2, data: [{"tc":"<=-5","rounds":113930,"ev":-0.18205915913280085,"sd":2.6523180267048208},{"tc":"-4","rounds":114798,"ev":-0.1146796982525828,"sd":2.644923533229885},{"tc":"-3","rounds":182519,"ev":-0.09146992915806025,"sd":2.6429157771791556},{"tc":"-2","rounds":382530,"ev":-0.07222962904870206,"sd":2.646564509431767},{"tc":"-1","rounds":615784,"ev":-0.04103874085718369,"sd":2.645235646295603},{"tc":"0","rounds":2257488,"ev":-0.02232658601064546,"sd":2.6467967444324034},{"tc":"1","rounds":581624,"ev":0.01195101990289259,"sd":2.651005901741619},{"tc":"2","rounds":362185,"ev":0.0388144180460262,"sd":2.649396770605435},{"tc":"3","rounds":171922,"ev":0.054827189074115004,"sd":2.6501085967333897},{"tc":"4","rounds":109179,"ev":0.09558614751921157,"sd":2.656039852219121},{"tc":"5","rounds":50583,"ev":0.10981950457663642,"sd":2.6591372781477247},{"tc":"6","rounds":30693,"ev":0.1661616655263415,"sd":2.6675537868017933},{"tc":"7","rounds":13583,"ev":0.1794154457778105,"sd":2.662571214342473},{"tc":">=8","rounds":13182,"ev":0.16219086633287816,"sd":2.681030706784088}] },
+      d6_cut1p75_tc1deck_u2_o0: { label: "6 decks \u00b7 cut 1.75 decks (91 cards ~71%) \u00b7 heads-up \u00b7 1 deck TC \u00b7 two-hand data", note: "20M table rounds. Hidden practical integer-TC support dataset.", userSpots: 2, data: [{"tc":"<=-5","rounds":514076,"ev":-0.17050397217532037,"sd":2.64944436565963},{"tc":"-4","rounds":440012,"ev":-0.12084443151550413,"sd":2.6444751240939883},{"tc":"-3","rounds":797796,"ev":-0.0945091226328535,"sd":2.6451147621184448},{"tc":"-2","rounds":1452737,"ev":-0.06972769331269184,"sd":2.644684885126574},{"tc":"-1","rounds":2647647,"ev":-0.05055809932366361,"sd":2.6462273052237424},{"tc":"0","rounds":8597381,"ev":-0.016712880352749284,"sd":2.6476369612959036},{"tc":"1","rounds":2512749,"ev":0.016990156995386328,"sd":2.64842558174359},{"tc":"2","rounds":1376019,"ev":0.0412152739170026,"sd":2.6508925165473824},{"tc":"3","rounds":757749,"ev":0.05772491946541665,"sd":2.6492149625314543},{"tc":"4","rounds":419743,"ev":0.07746406729832302,"sd":2.6530850160027293},{"tc":"5","rounds":228908,"ev":0.10186188337672777,"sd":2.660041420318269},{"tc":"6","rounds":124388,"ev":0.10923883332797375,"sd":2.651563320025806},{"tc":"7","rounds":65547,"ev":0.12534517216653698,"sd":2.6553669354639546},{"tc":">=8","rounds":65248,"ev":0.16720819028935752,"sd":2.66353248994162}] },
+      d6_cut2_tc0p5deck_u1_o0: { label: "6 decks \u00b7 cut 2 decks (104 cards ~67%) \u00b7 heads-up \u00b7 0.5 deck TC", note: "5M table rounds. Practical integer-TC dataset.", userSpots: 1, data: [{"tc":"<=-5","rounds":95561,"ev":-0.07700840300959597,"sd":1.6406297588461645},{"tc":"-4","rounds":106722,"ev":-0.06481325312494143,"sd":1.6401405332923826},{"tc":"-3","rounds":172708,"ev":-0.04449128007967205,"sd":1.646192725262902},{"tc":"-2","rounds":378791,"ev":-0.03418243833670811,"sd":1.653446698282382},{"tc":"-1","rounds":623369,"ev":-0.026435385782738633,"sd":1.6525012515421926},{"tc":"0","rounds":2321113,"ev":-0.00764934753284308,"sd":1.6538665283733593},{"tc":"1","rounds":588444,"ev":0.014161075650359253,"sd":1.6605766247184275},{"tc":"2","rounds":359265,"ev":0.013363394708641254,"sd":1.6585776528713272},{"tc":"3","rounds":163268,"ev":0.025724575544503515,"sd":1.6627551283466064},{"tc":"4","rounds":100689,"ev":0.03831600274111373,"sd":1.6582567773257464},{"tc":"5","rounds":43631,"ev":0.06302858059636497,"sd":1.6670066369053305},{"tc":"6","rounds":26279,"ev":0.05053464743711709,"sd":1.6707220217112566},{"tc":"7","rounds":10711,"ev":0.0643263934273177,"sd":1.6847711545603439},{"tc":">=8","rounds":9449,"ev":0.06688538469679331,"sd":1.6769378920885174}] },
+      d6_cut2_exactint_u1_o0: { label: "6 decks \u00b7 cut 2 decks (104 cards ~67%) \u00b7 heads-up \u00b7 exact int TC", note: "20M table rounds. Exact decks, integer-truncated TC dataset.", userSpots: 1, data: [{"tc":"<=-5","rounds":340967,"ev":-0.08367965228306552,"sd":1.6428656026236854},{"tc":"-4","rounds":365576,"ev":-0.06160962426417489,"sd":1.643319293308213},{"tc":"-3","rounds":695015,"ev":-0.05128522405991238,"sd":1.6448311922433723},{"tc":"-2","rounds":1338140,"ev":-0.03840853722330997,"sd":1.6475097742444322},{"tc":"-1","rounds":2526976,"ev":-0.0245051793131395,"sd":1.6497474787613666},{"tc":"0","rounds":9772001,"ev":-0.009358779230579284,"sd":1.653842737675743},{"tc":"1","rounds":2382536,"ev":0.007583096330968347,"sd":1.6557627180694252},{"tc":"2","rounds":1264071,"ev":0.0195028602032639,"sd":1.657532941013909},{"tc":"3","rounds":654813,"ev":0.03283532855945132,"sd":1.6652724066273905},{"tc":"4","rounds":343073,"ev":0.04642160706321978,"sd":1.6658918414531432},{"tc":"5","rounds":168989,"ev":0.06038262845510654,"sd":1.668008166978254},{"tc":"6","rounds":82089,"ev":0.059557309749174676,"sd":1.6662383848826443},{"tc":"7","rounds":37834,"ev":0.09589258339060104,"sd":1.66679081436365},{"tc":">=8","rounds":27920,"ev":0.07306590257879657,"sd":1.6778831146337883}] },
+      d6_cut2_exactint_u2_o0: { label: "6 decks \u00b7 cut 2 decks (104 cards ~67%) \u00b7 heads-up \u00b7 exact int TC \u00b7 two-hand data", note: "20M table rounds. Hidden exact-decks integer-TC support dataset.", userSpots: 2, data: [{"tc":"<=-5","rounds":340242,"ev":-0.16827728499127093,"sd":2.6499261553305473},{"tc":"-4","rounds":366408,"ev":-0.12347164909063121,"sd":2.6427029116599554},{"tc":"-3","rounds":692336,"ev":-0.09716958239929745,"sd":2.645272220995042},{"tc":"-2","rounds":1333622,"ev":-0.07155625807012782,"sd":2.6456796717395905},{"tc":"-1","rounds":2511461,"ev":-0.0498088562792733,"sd":2.6472157767966142},{"tc":"0","rounds":9831673,"ev":-0.017714991131214393,"sd":2.647137561133956},{"tc":"1","rounds":2363020,"ev":0.017996038967084495,"sd":2.648283680762584},{"tc":"2","rounds":1256488,"ev":0.040798638745455584,"sd":2.6511485895682747},{"tc":"3","rounds":649323,"ev":0.06873620678768502,"sd":2.6514465107996608},{"tc":"4","rounds":340215,"ev":0.08066075863792013,"sd":2.648484803249361},{"tc":"5","rounds":168645,"ev":0.10478816448753299,"sd":2.649765793398254},{"tc":"6","rounds":82081,"ev":0.11815158197390382,"sd":2.652339828790978},{"tc":"7","rounds":37349,"ev":0.18394066775549547,"sd":2.655616562739395},{"tc":">=8","rounds":27137,"ev":0.18911449312746434,"sd":2.6804171130832306}] },
+      d6_cut2_tc1deck_u1_o0: { label: "6 decks \u00b7 cut 2 decks (104 cards ~67%) \u00b7 heads-up \u00b7 1 deck TC", note: "20M table rounds. Practical integer-TC dataset.", userSpots: 1, data: [{"tc":"<=-5","rounds":438278,"ev":-0.07992643938322253,"sd":1.6437976696922163},{"tc":"-4","rounds":403701,"ev":-0.056405607120121076,"sd":1.6425237579279852},{"tc":"-3","rounds":763229,"ev":-0.04451481796420209,"sd":1.644572968997401},{"tc":"-2","rounds":1436670,"ev":-0.034362797302094426,"sd":1.647213325572077},{"tc":"-1","rounds":2698549,"ev":-0.024635461501718147,"sd":1.6509098434032707},{"tc":"0","rounds":8818528,"ev":-0.008649289314497838,"sd":1.6538065181707347},{"tc":"1","rounds":2556601,"ev":0.006051785163191284,"sd":1.6568335000841155},{"tc":"2","rounds":1362568,"ev":0.01771874871566043,"sd":1.6607626551883874},{"tc":"3","rounds":724436,"ev":0.030846065076832185,"sd":1.6601758118162586},{"tc":"4","rounds":383237,"ev":0.039309878743440746,"sd":1.665164235565752},{"tc":"5","rounds":201658,"ev":0.04823513076595027,"sd":1.666881926801722},{"tc":"6","rounds":105422,"ev":0.06330746902923488,"sd":1.6732970545258299},{"tc":"7","rounds":54277,"ev":0.06067026548998655,"sd":1.6691728523030211},{"tc":">=8","rounds":52846,"ev":0.08161450251674678,"sd":1.6772632205580305}] },
+      d6_cut2_tc0p5deck_u2_o0: { label: "6 decks \u00b7 cut 2 decks (104 cards ~67%) \u00b7 heads-up \u00b7 0.5 deck TC \u00b7 two-hand data", note: "5M table rounds. Hidden practical integer-TC support dataset.", userSpots: 2, data: [{"tc":"<=-5","rounds":95500,"ev":-0.14979057591623038,"sd":2.676831458592833},{"tc":"-4","rounds":106918,"ev":-0.11405937260330347,"sd":2.642702390196004},{"tc":"-3","rounds":173097,"ev":-0.10139979317954673,"sd":2.6492069442391704},{"tc":"-2","rounds":377500,"ev":-0.08030728476821192,"sd":2.64335999525537},{"tc":"-1","rounds":617975,"ev":-0.0470650107204984,"sd":2.6442197176536366},{"tc":"0","rounds":2336228,"ev":-0.016157241502113662,"sd":2.648610683644657},{"tc":"1","rounds":584148,"ev":0.013133657908612201,"sd":2.649597483092275},{"tc":"2","rounds":358458,"ev":0.033091742965703094,"sd":2.65074952038807},{"tc":"3","rounds":162449,"ev":0.05269346071690192,"sd":2.651728677256672},{"tc":"4","rounds":99529,"ev":0.06876387786474294,"sd":2.6510101842950204},{"tc":"5","rounds":42651,"ev":0.12372511781669832,"sd":2.6684952870446863},{"tc":"6","rounds":25350,"ev":0.12268244575936883,"sd":2.6467385877008685},{"tc":"7","rounds":10450,"ev":0.13502392344497607,"sd":2.6441319202845874},{"tc":">=8","rounds":9747,"ev":0.20560172360726378,"sd":2.6623536632851432}] },
+      d6_cut2_tc1deck_u2_o0: { label: "6 decks \u00b7 cut 2 decks (104 cards ~67%) \u00b7 heads-up \u00b7 1 deck TC \u00b7 two-hand data", note: "20M table rounds. Hidden practical integer-TC support dataset.", userSpots: 2, data: [{"tc":"<=-5","rounds":439539,"ev":-0.16240424626711167,"sd":2.645949555152018},{"tc":"-4","rounds":402919,"ev":-0.12050064653193322,"sd":2.6498992123922247},{"tc":"-3","rounds":760992,"ev":-0.09452004751692528,"sd":2.646774326887895},{"tc":"-2","rounds":1431843,"ev":-0.07391941714280127,"sd":2.6459464170847293},{"tc":"-1","rounds":2681969,"ev":-0.04936969815833069,"sd":2.6470451403646424},{"tc":"0","rounds":8891488,"ev":-0.018170299504424905,"sd":2.6473239879456973},{"tc":"1","rounds":2532028,"ev":0.011317805332326498,"sd":2.64825513321406},{"tc":"2","rounds":1349389,"ev":0.0361808196153963,"sd":2.6516557637962497},{"tc":"3","rounds":716736,"ev":0.05422638181980534,"sd":2.6485722530201627},{"tc":"4","rounds":381769,"ev":0.08453803216080928,"sd":2.652224464771452},{"tc":"5","rounds":200319,"ev":0.10556162920142373,"sd":2.653892453063314},{"tc":"6","rounds":104975,"ev":0.13037389854727316,"sd":2.6575467862163067},{"tc":"7","rounds":53921,"ev":0.138665825930528,"sd":2.6501958527419385},{"tc":">=8","rounds":52113,"ev":0.19066259858384665,"sd":2.675561233239468}] },
+      d8_cut15_u1_o0: { label: "8 decks · cut 1.5 decks · heads-up", note: "1M table rounds. Preview dataset.", userSpots: 1, data: [{"tc":"<=-5","rounds":43957,"ev":-0.0687945037195441,"sd":1.6451882396271962},{"tc":"-4","rounds":35304,"ev":-0.053648311806027645,"sd":1.6527037199117356},{"tc":"-3","rounds":63045,"ev":-0.03679911174557855,"sd":1.6478578276382512},{"tc":"-2","rounds":121253,"ev":-0.02849414035116657,"sd":1.6500481336773214},{"tc":"-1","rounds":209539,"ev":-0.016932408764000973,"sd":1.6519887345384996},{"tc":"0","rounds":269160,"ev":-0.0021882894932382228,"sd":1.6557044502408527},{"tc":"1","rounds":117035,"ev":0.008194129961122742,"sd":1.6570776333614732},{"tc":"2","rounds":62069,"ev":0.009102772720681822,"sd":1.6646739887586737},{"tc":"3","rounds":34896,"ev":0.032066712517193945,"sd":1.6615848478070163},{"tc":"4","rounds":19700,"ev":0.034416243654822334,"sd":1.6629840738223878},{"tc":"5","rounds":11107,"ev":0.03367245880975961,"sd":1.658072311583221},{"tc":"6","rounds":6176,"ev":0.07205310880829016,"sd":1.7055293519129038},{"tc":"7","rounds":3159,"ev":0.08673630895853118,"sd":1.693724731682419},{"tc":">=8","rounds":3600,"ev":0.09805555555555556,"sd":1.6761717616913125}] },
+      d8_cut15_u2_o0: { label: "8 decks · cut 1.5 decks · heads-up · two-hand data", note: "1M table rounds. Hidden support dataset.", userSpots: 2, data: [{"tc":"<=-5","rounds":44781,"ev":-0.16163104888233848,"sd":2.6405601453063974},{"tc":"-4","rounds":36150,"ev":-0.09850622406639004,"sd":2.6534156558611404},{"tc":"-3","rounds":64033,"ev":-0.0805522152640045,"sd":2.6428914409491426},{"tc":"-2","rounds":122436,"ev":-0.05172498284818191,"sd":2.6503461200151146},{"tc":"-1","rounds":205725,"ev":-0.035610645278891725,"sd":2.646344777253277},{"tc":"0","rounds":275132,"ev":-0.00856679702833549,"sd":2.6470923129565436},{"tc":"1","rounds":115949,"ev":0.0292973634960198,"sd":2.657876642425575},{"tc":"2","rounds":60859,"ev":0.03402947797367686,"sd":2.636785321537495},{"tc":"3","rounds":33525,"ev":0.07737509321401939,"sd":2.6541725708851076},{"tc":"4","rounds":18783,"ev":0.0683596869509663,"sd":2.650528412558615},{"tc":"5","rounds":10185,"ev":0.09091801669121256,"sd":2.650326901902083},{"tc":"6","rounds":5594,"ev":0.1473006792992492,"sd":2.6635499683847654},{"tc":"7","rounds":3208,"ev":0.17830423940149626,"sd":2.639381987136748},{"tc":">=8","rounds":3640,"ev":0.2098901098901099,"sd":2.659713896249404}] },
+      d8_cut20_u1_o0: { label: "8 decks · cut 2 decks · heads-up", note: "1M table rounds. Preview dataset.", userSpots: 1, data: [{"tc":"<=-5","rounds":32591,"ev":-0.06630664907489797,"sd":1.6379309173144097},{"tc":"-4","rounds":32117,"ev":-0.037581343213874276,"sd":1.639731866507051},{"tc":"-3","rounds":62675,"ev":-0.038085360989230155,"sd":1.6417182387127816},{"tc":"-2","rounds":123425,"ev":-0.024970629937208833,"sd":1.6432700827513336},{"tc":"-1","rounds":220908,"ev":-0.016156046861136763,"sd":1.6509288365253698},{"tc":"0","rounds":283685,"ev":-0.0041313428626822005,"sd":1.6555460785866765},{"tc":"1","rounds":118349,"ev":0.012649029565099832,"sd":1.65526851339254},{"tc":"2","rounds":61592,"ev":0.024223925185088972,"sd":1.6641269134113117},{"tc":"3","rounds":31936,"ev":0.0374498997995992,"sd":1.6704208816459003},{"tc":"4","rounds":16857,"ev":0.05024618852702142,"sd":1.6586288021647775},{"tc":"5","rounds":8350,"ev":0.08251497005988023,"sd":1.662411032624803},{"tc":"6","rounds":4135,"ev":0.06650544135429262,"sd":1.678854262073862},{"tc":"7","rounds":1871,"ev":0.09406734366648851,"sd":1.701297041516044},{"tc":">=8","rounds":1509,"ev":0.1954937044400265,"sd":1.7412717786198741}] },
+      d8_cut20_u2_o0: { label: "8 decks · cut 2 decks · heads-up · two-hand data", note: "1M table rounds. Hidden support dataset.", userSpots: 2, data: [{"tc":"<=-5","rounds":33382,"ev":-0.15622191600263616,"sd":2.6480391610773872},{"tc":"-4","rounds":32910,"ev":-0.1176238225463385,"sd":2.661357207754339},{"tc":"-3","rounds":62499,"ev":-0.07632122113953824,"sd":2.650213489986667},{"tc":"-2","rounds":123526,"ev":-0.03820248368764471,"sd":2.644271060593949},{"tc":"-1","rounds":217875,"ev":-0.024927137119908203,"sd":2.652607477370081},{"tc":"0","rounds":287238,"ev":-0.006280506061175749,"sd":2.64481206239428},{"tc":"1","rounds":117378,"ev":0.01874286493209971,"sd":2.6505171637117377},{"tc":"2","rounds":61046,"ev":0.05291091963437408,"sd":2.6607451124533954},{"tc":"3","rounds":31615,"ev":0.06180610469713743,"sd":2.6366510688398916},{"tc":"4","rounds":16517,"ev":0.10710177392989041,"sd":2.6653871633432744},{"tc":"5","rounds":8258,"ev":0.16105594574957616,"sd":2.672206444889072},{"tc":"6","rounds":4282,"ev":0.1753853339560953,"sd":2.6793136313821795},{"tc":"7","rounds":1958,"ev":0.12870275791624106,"sd":2.639331533227809},{"tc":">=8","rounds":1516,"ev":0.10686015831134564,"sd":2.688130935247636}] }
+    };
+
+    const scenarioCatalog = [
+      { key: "d6_cut1_u1_o0", decks: "6", cut: "1", players: "1", tcEstimate: "exact", tcLabel: "Exact float (legacy)", cutLabel: "1 deck (52 cards ~83%)", playersLabel: "1 (heads-up)", roundsPerShoe: 47.66 },
+      { key: "d6_cut1_exactint_u1_o0", decks: "6", cut: "1", players: "1", tcEstimate: "exactint", tcLabel: "Exact int", cutLabel: "1 deck (52 cards ~83%)", playersLabel: "1 (heads-up)", roundsPerShoe: 47.66 },
+      { key: "d6_cut1_tc1deck_u1_o0", decks: "6", cut: "1", players: "1", tcEstimate: "1deck", tcLabel: "1 deck int", cutLabel: "1 deck (52 cards ~83%)", playersLabel: "1 (heads-up)", roundsPerShoe: 47.66 },
+      { key: "d6_cut1_tc0p5deck_u1_o0", decks: "6", cut: "1", players: "1", tcEstimate: "0p5deck", tcLabel: "0.5 deck int", cutLabel: "1 deck (52 cards ~83%)", playersLabel: "1 (heads-up)", roundsPerShoe: 47.66 },
+      { key: "d6_cut1_u1_o1", decks: "6", cut: "1", players: "2", tcEstimate: "exact", tcLabel: "Exact float (legacy)", cutLabel: "1 deck (52 cards ~83%)", playersLabel: "2 players", roundsPerShoe: 32.58 },
+      { key: "d6_cut1p25_u1_o0", decks: "6", cut: "1.25", players: "1", tcEstimate: "exact", tcLabel: "Exact float (legacy)", cutLabel: "1.25 decks (65 cards ~79%)", playersLabel: "1 (heads-up)", roundsPerShoe: 45.14 },
+      { key: "d6_cut1p25_exactint_u1_o0", decks: "6", cut: "1.25", players: "1", tcEstimate: "exactint", tcLabel: "Exact int", cutLabel: "1.25 decks (65 cards ~79%)", playersLabel: "1 (heads-up)", roundsPerShoe: 45.14 },
+      { key: "d6_cut1p25_tc1deck_u1_o0", decks: "6", cut: "1.25", players: "1", tcEstimate: "1deck", tcLabel: "1 deck int", cutLabel: "1.25 decks (65 cards ~79%)", playersLabel: "1 (heads-up)", roundsPerShoe: 45.14 },
+      { key: "d6_cut1p25_tc0p5deck_u1_o0", decks: "6", cut: "1.25", players: "1", tcEstimate: "0p5deck", tcLabel: "0.5 deck int", cutLabel: "1.25 decks (65 cards ~79%)", playersLabel: "1 (heads-up)", roundsPerShoe: 45.14 },
+      { key: "d6_cut1p25_u1_o1", decks: "6", cut: "1.25", players: "2", tcEstimate: "exact", tcLabel: "Exact float (legacy)", cutLabel: "1.25 decks (65 cards ~79%)", playersLabel: "2 players", roundsPerShoe: 30.86 },
+      { key: "p75_u1_o0", decks: "6", cut: "1.5", players: "1", tcEstimate: "exact", tcLabel: "Exact float (legacy)", cutLabel: "1.5 decks (78 cards ~75%)", playersLabel: "1 (heads-up)", roundsPerShoe: 42.76 },
+      { key: "d6_cut1p5_exactint_u1_o0", decks: "6", cut: "1.5", players: "1", tcEstimate: "exactint", tcLabel: "Exact int", cutLabel: "1.5 decks (78 cards ~75%)", playersLabel: "1 (heads-up)", roundsPerShoe: 42.76 },
+      { key: "d6_cut1p5_tc1deck_u1_o0", decks: "6", cut: "1.5", players: "1", tcEstimate: "1deck", tcLabel: "1 deck int", cutLabel: "1.5 decks (78 cards ~75%)", playersLabel: "1 (heads-up)", roundsPerShoe: 42.76 },
+      { key: "d6_cut1p5_tc0p5deck_u1_o0", decks: "6", cut: "1.5", players: "1", tcEstimate: "0p5deck", tcLabel: "0.5 deck int", cutLabel: "1.5 decks (78 cards ~75%)", playersLabel: "1 (heads-up)", roundsPerShoe: 42.76 },
+      { key: "d6_cut1p5_u1_o1", decks: "6", cut: "1.5", players: "2", tcEstimate: "exact", tcLabel: "Exact float (legacy)", cutLabel: "1.5 decks (78 cards ~75%)", playersLabel: "2 players", roundsPerShoe: 29.29 },
+      { key: "d6_cut1p75_u1_o0", decks: "6", cut: "1.75", players: "1", tcEstimate: "exact", tcLabel: "Exact float (legacy)", cutLabel: "1.75 decks (91 cards ~71%)", playersLabel: "1 (heads-up)", roundsPerShoe: 40.41 },
+      { key: "d6_cut1p75_exactint_u1_o0", decks: "6", cut: "1.75", players: "1", tcEstimate: "exactint", tcLabel: "Exact int", cutLabel: "1.75 decks (91 cards ~71%)", playersLabel: "1 (heads-up)", roundsPerShoe: 40.41 },
+      { key: "d6_cut1p75_tc1deck_u1_o0", decks: "6", cut: "1.75", players: "1", tcEstimate: "1deck", tcLabel: "1 deck int", cutLabel: "1.75 decks (91 cards ~71%)", playersLabel: "1 (heads-up)", roundsPerShoe: 40.41 },
+      { key: "d6_cut1p75_tc0p5deck_u1_o0", decks: "6", cut: "1.75", players: "1", tcEstimate: "0p5deck", tcLabel: "0.5 deck int", cutLabel: "1.75 decks (91 cards ~71%)", playersLabel: "1 (heads-up)", roundsPerShoe: 40.41 },
+      { key: "d6_cut1p75_u1_o1", decks: "6", cut: "1.75", players: "2", tcEstimate: "exact", tcLabel: "Exact float (legacy)", cutLabel: "1.75 decks (91 cards ~71%)", playersLabel: "2 players", roundsPerShoe: 27.68 },
+      { key: "d6_cut2_u1_o0", decks: "6", cut: "2", players: "1", tcEstimate: "exact", tcLabel: "Exact float (legacy)", cutLabel: "2 decks (104 cards ~67%)", playersLabel: "1 (heads-up)", roundsPerShoe: 38.26 },
+      { key: "d6_cut2_exactint_u1_o0", decks: "6", cut: "2", players: "1", tcEstimate: "exactint", tcLabel: "Exact int", cutLabel: "2 decks (104 cards ~67%)", playersLabel: "1 (heads-up)", roundsPerShoe: 38.26 },
+      { key: "d6_cut2_tc1deck_u1_o0", decks: "6", cut: "2", players: "1", tcEstimate: "1deck", tcLabel: "1 deck int", cutLabel: "2 decks (104 cards ~67%)", playersLabel: "1 (heads-up)", roundsPerShoe: 38.26 },
+      { key: "d6_cut2_tc0p5deck_u1_o0", decks: "6", cut: "2", players: "1", tcEstimate: "0p5deck", tcLabel: "0.5 deck int", cutLabel: "2 decks (104 cards ~67%)", playersLabel: "1 (heads-up)", roundsPerShoe: 38.26 },
+      { key: "d6_cut2_u1_o1", decks: "6", cut: "2", players: "2", tcEstimate: "exact", tcLabel: "Exact float (legacy)", cutLabel: "2 decks (104 cards ~67%)", playersLabel: "2 players", roundsPerShoe: 26.22 },
+      { key: "d8_cut15_u1_o0", decks: "8", cut: "1.5", players: "1", tcEstimate: "exact", tcLabel: "Exact float (legacy)", cutLabel: "1.5 decks (78 cards ~81%)", playersLabel: "1 (heads-up)", roundsPerShoe: 61.58 },
+      { key: "d8_cut20_u1_o0", decks: "8", cut: "2.0", players: "1", tcEstimate: "exact", tcLabel: "Exact float (legacy)", cutLabel: "2 decks (104 cards ~75%)", playersLabel: "1 (heads-up)", roundsPerShoe: 56.90 }
+    ];
+
+    let currentScenarioKey = "d6_cut1_u1_o0";
+    let bucketData = scenarioData[currentScenarioKey].data;
+    let totalRounds = bucketData.reduce((sum, row) => sum + row.rounds, 0);
+
+    const defaultBets = {
+      "<=-5": 25, "-4": 25, "-3": 25, "-2": 25, "-1": 25, "0": 25, "1": 25,
+      "2": 100, "3": 200, "4": 300, "5": 400, "6": 400, "7": 400, ">=8": 400
+    };
+    const currentBets = { ...defaultBets };
+
+    const tbody = document.querySelector("#rampTable tbody");
+    const detailRows = document.querySelector("#detailRows");
+    const chart = document.querySelector("#chart");
+    const ctx = chart.getContext("2d");
+    const decksSelect = document.querySelector("#decks");
+    const cutCardSelect = document.querySelector("#cutCard");
+    const playersSelect = document.querySelector("#playersAtTable");
+    const tcEstimateSelect = document.querySelector("#tcEstimate");
+    const scenarioNote = document.querySelector("#scenarioNote");
+    const chartMode = document.querySelector("#chartMode");
+    const chartModeTop = document.querySelector("#chartModeTop");
+    const handsPerHourInput = document.querySelector("#handsPerHour");
+    const rphHelp = document.querySelector("#rphHelp");
+    const shoesPerHour = 3;
+
+    function money(value) {
+      const sign = value < 0 ? "-" : "";
+      return sign + "$" + Math.abs(value).toLocaleString(undefined, { maximumFractionDigits: 2, minimumFractionDigits: 2 });
+    }
+
+    function pct(value) {
+      return (100 * value).toFixed(3) + "%";
+    }
+
+    function units(value) {
+      return value.toFixed(4) + " u";
+    }
+
+    function tcFloor(tc) {
+      if (tc === "<=-5") return -5;
+      if (tc === ">=8") return 8;
+      return Number(tc);
+    }
+
+    function twoSpotKey(key) {
+      return key.replace("_u1_", "_u2_");
+    }
+
+    function useTwoHands(tc) {
+      const setting = document.querySelector("#twoHandsFrom").value;
+      if (setting === "never") return false;
+      if (setting === "always") return true;
+      return tcFloor(tc) >= Number(setting);
+    }
+
+    function statForRow(row) {
+      if (!useTwoHands(row.tc)) {
+        return { ...row, spots: 1 };
+      }
+      const twoData = scenarioData[twoSpotKey(currentScenarioKey)]?.data;
+      const twoRow = twoData?.find(item => item.tc === row.tc);
+      return { ...(twoRow || row), rounds: row.rounds, spots: twoRow ? 2 : 1 };
+    }
+
+    function captureBets() {
+      document.querySelectorAll(".betInput").forEach(input => {
+        currentBets[input.dataset.tc] = Number(input.value || 0);
+      });
+    }
+
+    function buildInputs() {
+      captureBets();
+      tbody.innerHTML = "";
+      for (const row of bucketData) {
+        const freq = row.rounds / totalRounds;
+        const stat = statForRow(row);
+        const evPerDollar = stat.ev / stat.spots;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${row.tc}</td>
+          <td>${pct(freq)}</td>
+          <td class="${evPerDollar >= 0 ? "good" : "bad"}">${pct(evPerDollar)}</td>
+          <td><input class="betInput" data-tc="${row.tc}" type="number" min="0" step="5" value="${currentBets[row.tc] ?? defaultBets[row.tc] ?? 0}"></td>
+        `;
+        tr.querySelector("input").addEventListener("input", event => {
+          currentBets[event.target.dataset.tc] = Number(event.target.value || 0);
+          calculate();
+        });
+        tbody.appendChild(tr);
+      }
+    }
+
+    function uniqueBy(items, field) {
+      const seen = new Set();
+      return items.filter(item => {
+        if (seen.has(item[field])) return false;
+        seen.add(item[field]);
+        return true;
+      });
+    }
+
+    function selectedCatalogItem() {
+      return scenarioCatalog.find(item => item.key === currentScenarioKey) || scenarioCatalog[0];
+    }
+
+    function setOptions(select, items, valueField, labelField, currentValue) {
+      select.innerHTML = "";
+      for (const item of items) {
+        const option = document.createElement("option");
+        option.value = item[valueField];
+        option.textContent = item[labelField] ?? item[valueField];
+        select.appendChild(option);
+      }
+      if (items.some(item => item[valueField] === currentValue)) {
+        select.value = currentValue;
+      } else if (items.length) {
+        select.value = items[0][valueField];
+      }
+    }
+
+    function buildScenarioControls() {
+      const selected = selectedCatalogItem();
+      const deckItems = uniqueBy(scenarioCatalog, "decks").map(item => ({ decks: item.decks, label: item.decks + " Deck" }));
+      setOptions(decksSelect, deckItems, "decks", "label", selected.decks);
+      refreshDependentScenarioControls(selected.cut, selected.players, selected.tcEstimate);
+    }
+
+    function refreshDependentScenarioControls(preferredCut, preferredPlayers, preferredTcEstimate) {
+      const deck = decksSelect.value;
+      const cutItems = uniqueBy(scenarioCatalog.filter(item => item.decks === deck), "cut");
+      setOptions(cutCardSelect, cutItems, "cut", "cutLabel", preferredCut);
+      const cut = cutCardSelect.value;
+      const playerItems = uniqueBy(scenarioCatalog.filter(item => item.decks === deck && item.cut === cut), "players");
+      setOptions(playersSelect, playerItems, "players", "playersLabel", preferredPlayers);
+      const players = playersSelect.value;
+      const tcItems = uniqueBy(scenarioCatalog.filter(item => item.decks === deck && item.cut === cut && item.players === players), "tcEstimate");
+      setOptions(tcEstimateSelect, tcItems, "tcEstimate", "tcLabel", preferredTcEstimate);
+      const match = scenarioCatalog.find(item => item.decks === deck && item.cut === cut && item.players === players && item.tcEstimate === tcEstimateSelect.value);
+      if (match) setScenario(match.key);
+    }
+
+    function setScenario(key) {
+      currentScenarioKey = key;
+      bucketData = scenarioData[currentScenarioKey].data;
+      totalRounds = bucketData.reduce((sum, row) => sum + row.rounds, 0);
+      const selected = selectedCatalogItem();
+      scenarioNote.textContent = selected.decks + " decks · cut " + selected.cutLabel + " · " + selected.playersLabel + " · TC " + selected.tcLabel + ". " + scenarioData[currentScenarioKey].note;
+      applyRphPreset();
+      buildInputs();
+      calculate();
+    }
+
+    function applyRphPreset() {
+      const selected = selectedCatalogItem();
+      const roundsPerShoe = selected.roundsPerShoe || 0;
+      const rph = Math.round(roundsPerShoe * shoesPerHour);
+      handsPerHourInput.value = rph;
+      rphHelp.textContent = "Built in: " + shoesPerHour + " shoes/hour · " + roundsPerShoe.toFixed(1) + " rounds/shoe · " + rph + " table rounds/hour";
+    }
+
+    function calculate() {
+      captureBets();
+      const bankroll = Number(document.querySelector("#bankroll").value || 0);
+      const handsPerHour = Number(handsPerHourInput.value || 0);
+
+      let ev = 0;
+      let secondMoment = 0;
+      let avgInitialBet = 0;
+      const rows = bucketData.map(row => {
+        const freq = row.rounds / totalRounds;
+        const bet = currentBets[row.tc] ?? 0;
+        const stat = statForRow(row);
+        const bucketEv = stat.ev * bet;
+        const bucketSd = stat.sd * bet;
+        const bucketSecond = bucketSd * bucketSd + bucketEv * bucketEv;
+        ev += freq * bucketEv;
+        secondMoment += freq * bucketSecond;
+        avgInitialBet += freq * bet * stat.spots;
+        return { ...row, stat, freq, bet, bucketEv, bucketSd, spots: stat.spots };
+      });
+      const variance = Math.max(0, secondMoment - ev * ev);
+      const sd = Math.sqrt(variance);
+      const evSe = totalRounds > 0 ? sd / Math.sqrt(totalRounds) : 0;
+      const ev95 = 1.96 * evSe;
+      const evHour = ev * handsPerHour;
+      const evHour95 = ev95 * handsPerHour;
+      const evPerAvgBet = avgInitialBet > 0 ? ev / avgInitialBet : 0;
+      const n0 = ev > 0 ? variance / (ev * ev) : Infinity;
+      const ror = ev > 0 && variance > 0 ? Math.exp(-2 * ev * bankroll / variance) : 1;
+
+      setMetric("evHand", money(ev), ev >= 0);
+      document.querySelector("#evHandSub").textContent = "95% CI ±" + money(ev95) + " / round · EV/avg bet " + pct(evPerAvgBet);
+      setMetric("evHour", money(evHour), evHour >= 0);
+      document.querySelector("#ev100").textContent = "95% CI ±" + money(evHour95) + " / hour";
+      document.querySelector("#sdHand").textContent = money(sd);
+      document.querySelector("#sdHand").className = "value";
+      document.querySelector("#avgBet").textContent = "Avg initial bet " + money(avgInitialBet);
+      document.querySelector("#ror").textContent = (100 * ror).toFixed(2) + "%";
+      document.querySelector("#ror").className = "value " + (ror < 0.05 ? "good" : ror < 0.2 ? "warn" : "bad");
+      document.querySelector("#n0").textContent = Number.isFinite(n0) ? "N0 " + Math.round(n0).toLocaleString() + " rounds" : "N0 unavailable";
+
+      renderDetail(rows);
+      renderChart(rows);
+    }
+
+    function setMetric(id, text, positive) {
+      const node = document.querySelector("#" + id);
+      node.textContent = text;
+      node.className = "value " + (positive ? "good" : "bad");
+    }
+
+    function renderDetail(rows) {
+      detailRows.innerHTML = "";
+      for (const row of rows) {
+        const baseEvPerInitial = row.stat.ev / row.spots;
+        const evBet = row.bet > 0 ? baseEvPerInitial : 0;
+        const tr = document.createElement("tr");
+        tr.innerHTML = `
+          <td>${row.tc}</td>
+          <td>${row.rounds.toLocaleString()}</td>
+          <td>${pct(row.freq)}</td>
+          <td>${row.spots}</td>
+          <td>${money(row.bet)}</td>
+          <td class="${baseEvPerInitial >= 0 ? "good" : "bad"}">${pct(baseEvPerInitial)}</td>
+          <td class="${row.bucketEv >= 0 ? "good" : "bad"}">${money(row.bucketEv)}</td>
+          <td class="${evBet >= 0 ? "good" : "bad"}">${pct(evBet)}</td>
+          <td>${money(row.bucketSd)}</td>
+        `;
+        detailRows.appendChild(tr);
+      }
+    }
+
+    function renderChart(rows) {
+      const w = chart.width;
+      const h = chart.height;
+      ctx.clearRect(0, 0, w, h);
+      const pad = { left: 48, right: 18, top: 18, bottom: 44 };
+      const mode = chartModeTop.value;
+      const values = mode === "freq" ? rows.map(row => row.freq) : rows.map(row => row.freq * row.bucketEv);
+      const maxAbs = Math.max(0.0001, ...values.map(v => Math.abs(v)));
+      const zeroY = pad.top + (h - pad.top - pad.bottom) / 2;
+      ctx.strokeStyle = "#d9dde5";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(pad.left, mode === "freq" ? h - pad.bottom : zeroY);
+      ctx.lineTo(w - pad.right, mode === "freq" ? h - pad.bottom : zeroY);
+      ctx.stroke();
+      const gap = 8;
+      const barW = (w - pad.left - pad.right - gap * (rows.length - 1)) / rows.length;
+      rows.forEach((row, i) => {
+        const v = values[i];
+        const x = pad.left + i * (barW + gap);
+        const barLimit = mode === "freq" ? h - pad.top - pad.bottom - 8 : (h - pad.top - pad.bottom) / 2 - 8;
+        const barH = Math.abs(v) / maxAbs * barLimit;
+        const y = mode === "freq" ? h - pad.bottom - barH : v >= 0 ? zeroY - barH : zeroY;
+        ctx.fillStyle = mode === "freq" ? "#2563eb" : v >= 0 ? "#16803c" : "#b42318";
+        ctx.fillRect(x, y, barW, barH);
+        ctx.fillStyle = "#667085";
+        ctx.font = "12px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif";
+        ctx.textAlign = "center";
+        ctx.fillText(row.tc, x + barW / 2, h - 18);
+      });
+      ctx.fillStyle = "#667085";
+      ctx.textAlign = "left";
+      ctx.font = "12px -apple-system, BlinkMacSystemFont, Segoe UI, sans-serif";
+      ctx.fillText(mode === "freq" ? "True count frequency" : "Weighted EV contribution per table round", pad.left, 14);
+    }
+
+    buildScenarioControls();
+    decksSelect.addEventListener("input", () => refreshDependentScenarioControls(cutCardSelect.value, playersSelect.value, tcEstimateSelect.value));
+    cutCardSelect.addEventListener("input", () => refreshDependentScenarioControls(cutCardSelect.value, playersSelect.value, tcEstimateSelect.value));
+    playersSelect.addEventListener("input", () => refreshDependentScenarioControls(cutCardSelect.value, playersSelect.value, tcEstimateSelect.value));
+    tcEstimateSelect.addEventListener("input", () => refreshDependentScenarioControls(cutCardSelect.value, playersSelect.value, tcEstimateSelect.value));
+    document.querySelector("#twoHandsFrom").addEventListener("input", () => {
+      buildInputs();
+      calculate();
+    });
+    chartMode.addEventListener("input", event => {
+      chartModeTop.value = event.target.value;
+      calculate();
+    });
+    chartModeTop.addEventListener("input", event => {
+      chartMode.value = event.target.value;
+      calculate();
+    });
+    document.querySelectorAll("input:not(.betInput)").forEach(node => {
+      if (node !== handsPerHourInput) {
+        node.addEventListener("input", calculate);
+      }
+    });
+    document.querySelectorAll("select").forEach(node => {
+      if (![decksSelect, cutCardSelect, playersSelect, tcEstimateSelect, chartMode, chartModeTop].includes(node)) {
+        node.addEventListener("input", calculate);
+      }
+    });
+    calculate();
+  </script>
+</body>
+</html>
