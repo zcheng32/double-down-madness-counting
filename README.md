@@ -45,6 +45,19 @@ that point as an open rules/strategy question:
 Under the current strict-Ace model, Version 1 `A vs A` is modeled as double, not
 hit.
 
+The first-pass deviation scan supports that choice. With 50,000 simulated
+rounds per action per true-count bucket, double beat hit for `A vs A` across the
+tested range:
+
+| TC | Double EV | Hit EV | Double edge | Combined 95% CI |
+|---:|---:|---:|---:|---:|
+| -3 | 0.35136 | 0.17502 | 0.17634 | 0.02290 |
+| 0 | 0.50698 | 0.24855 | 0.25843 | 0.02297 |
+| +3 | 0.66196 | 0.33153 | 0.33043 | 0.02305 |
+| +6 | 0.78450 | 0.38652 | 0.39798 | 0.02297 |
+
+Full table: `results/deviation/deviation_batch_summary.md`.
+
 ### 2. House Edge Replication
 
 Before studying counting, the simulator is checked against published or
