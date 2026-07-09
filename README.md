@@ -1,17 +1,150 @@
 # Double Down Madness Blackjack Counting Research
 
-Monte Carlo tools and early results for researching whether Double Down Madness Blackjack can be beaten with card counting.
+Monte Carlo tools, early results, and a bankroll calculator for researching whether
+Double Down Madness Blackjack can be beaten with card counting.
 
-The current model targets Version 1 rules:
+This project is a research notebook, not gambling advice. The results are
+preliminary and should be independently checked before being treated as final.
 
-- 6-deck shoe by default
-- Dealer hits soft 17
-- No split, no surrender
-- Dealer 22 pushes active main-game wagers
-- Strict first-card Ace rule: if the player's first card is an Ace, hit or double receives one card only
-- Version 1 blackjack pays suited 2:1 and unsuited 3:2
+## Current Ruleset
 
-This project is research-grade, not gambling advice. Results should be independently checked before being treated as final.
+The current model targets Double Down Madness Version 1:
+
+- 6-deck shoe by default.
+- Dealer hits soft 17.
+- No split, no surrender.
+- Dealer 22 pushes active main-game wagers.
+- Strict first-card Ace rule: if the player's first card is an Ace, hit or double receives one card only.
+- Version 1 blackjack pays suited BJ 2:1 and unsuited BJ 3:2.
+- Push 22 side bet is not played.
+
+## Storyline
+
+This repository follows the research path below.
+
+### 1. Wizard Basic Strategy And Rules Discussion
+
+The starting point is the
+[Wizard of Odds Double Down Madness page](https://wizardofodds.com/games/blackjack/double-down-madness/)
+and its published basic strategy. The most important rule ambiguity is the
+first-card Ace rule.
+
+This project currently uses the stricter interpretation:
+
+> If the player's first card is an Ace, the player receives only one additional
+> card after either hit or double.
+
+This differs from Wizard's published strategy note that says first-card Ace
+should double except that Version 1 `A vs A` should hit. The project treats
+that point as an open rules/strategy question:
+
+- If only an Ace double is restricted to one card, `A vs A` hit may be correct.
+- If any action after a first-card Ace receives only one card, `A vs A` hit loses
+  its continuing-action value, and our simulations support double instead.
+
+Under the current strict-Ace model, Version 1 `A vs A` is modeled as double, not
+hit.
+
+### 2. House Edge Replication
+
+Before studying counting, the simulator is checked against published or
+expected house-edge behavior. The goal is not just to get a number, but to make
+sure the dealing order, blackjack payouts, Dealer 22 push, H17 behavior, cut
+card handling, and Ace handling are all explicit.
+
+Relevant files:
+
+- `src/ddm_madness_counter_sim.py`
+- `results/bankroll/manifest_exactint_20m.json`
+- `results/bankroll/manifest_tc1deck_trunc_20m.json`
+
+### 3. Counting EV Results
+
+After the base game is modeled, the next question is whether Hi-Lo true count
+correlates with player edge strongly enough to support a bet ramp.
+
+The current bankroll calculator and simulation tools estimate:
+
+- EV by true-count bucket.
+- EV per round.
+- EV per initial bet.
+- EV per total action.
+- Standard deviation.
+- Risk-of-ruin approximation.
+
+Relevant files:
+
+- `src/ddm_bankroll_calculator.py`
+- `src/ddm_run_scenario_grid.py`
+- `web/index.html`
+
+### 4. True Count Estimation Impact
+
+A real player does not know exact fractional decks remaining. The project
+separates several true-count modes:
+
+- `Exact float (legacy)`: exact decks remaining, floating true count, then bucketed for reporting.
+- `Exact int`: exact decks remaining, true count truncated toward zero before betting/bucketing.
+- `1 deck int`: remaining decks rounded to the nearest full deck, then true count truncated toward zero.
+- `0.5 deck int`: remaining decks rounded to the nearest half deck, then true count truncated toward zero.
+
+For player-facing comparisons, use `Exact int`, `1 deck int`, and `0.5 deck int`.
+
+Relevant file:
+
+- `docs/ddm_tc_rounding_audit.md`
+
+### 5. Deviation Findings
+
+Early Monte Carlo scans suggest Double Down Madness does not copy ordinary
+blackjack index numbers directly. Hitting often remains better longer on stiff
+hands, likely because Dealer 22 pushes standing hands and hitting can still lead
+to future profitable double opportunities.
+
+Current focused findings:
+
+- `16 vs 10`: stand appears much later than ordinary blackjack, around TC +6/+7.
+- `12 vs 3`: stand around TC +4.
+- `12 vs 4`: stand around TC +2.
+- `13 vs 2`: stand around TC +4.
+- single-card `8 vs 4`: hit at TC 0 and below; double around TC +3.
+
+The current tested-deviation strategy improved a 50M-round-per-strategy
+full-shoe comparison by about `0.0029` units/round, or `0.116` percentage points
+of EV per initial bet, under the included 1-2-4-8-12-16 ramp. This is promising
+but still preliminary.
+
+Relevant files:
+
+- `src/ddm_deviation_scan.py`
+- `src/ddm_deviation_batch.py`
+- `src/ddm_deviation_focus.py`
+- `src/ddm_strategy_compare.py`
+- `docs/ddm_deviation_research_notes.md`
+- `docs/ddm_strategy_compare_notes.md`
+- `results/deviation/deviation_batch_summary.md`
+- `results/deviation/deviation_focus_summary.md`
+
+### 6. Bankroll Calculator
+
+The static calculator estimates the value and risk of custom bet ramps:
+
+- Bankroll.
+- Bets by true count.
+- Penetration.
+- Number of players.
+- One-hand vs two-hand thresholds.
+- EV/hour.
+- SD/hour.
+- Risk of ruin.
+
+Local file:
+
+- `web/index.html`
+
+GitHub Pages file:
+
+- `docs/index.html`
 
 ## What Is Included
 
@@ -25,7 +158,7 @@ This project is research-grade, not gambling advice. Results should be independe
   Batch runner for penetration/player/TC-estimation grids.
 
 - `src/ddm_deviation_scan.py`  
-  Early action-EV scanner for count-conditioned deviation research.
+  Action-EV scanner for count-conditioned deviation research.
 
 - `src/ddm_deviation_batch.py` and `src/ddm_deviation_focus.py`  
   Batch runners for first-pass and focused deviation scans.
@@ -36,14 +169,8 @@ This project is research-grade, not gambling advice. Results should be independe
 - `web/index.html`  
   Static bankroll calculator UI.
 
-- `docs/ddm_deviation_research_notes.md`  
-  Current deviation findings and next-run priorities.
-
-- `docs/ddm_strategy_compare_notes.md`  
-  Current full-shoe EV impact of adding the tested deviations.
-
-- `docs/ddm_tc_rounding_audit.md`  
-  Audit explaining floating exact TC vs integer TC comparisons.
+- `docs/index.html`
+  GitHub Pages copy of the calculator.
 
 - `results/`  
   Lightweight manifests and starter deviation CSVs. Large raw simulation outputs are intentionally excluded.
@@ -76,22 +203,6 @@ python3 src/ddm_deviation_scan.py \
   --csv results/deviation/t6_vs_t.csv
 ```
 
-Run the first-pass deviation batch:
-
-```bash
-python3 src/ddm_deviation_batch.py \
-  --rounds 50000 \
-  --out-dir results/deviation/batch_local
-```
-
-Run the focused higher-sample deviation batch:
-
-```bash
-python3 src/ddm_deviation_focus.py \
-  --rounds 200000 \
-  --out-dir results/deviation/focus_local
-```
-
 Compare basic strategy against the current tested-deviation strategy:
 
 ```bash
@@ -102,52 +213,24 @@ python3 src/ddm_strategy_compare.py \
   --ramp=-99:1,1:2,2:4,3:8,4:12,5:16
 ```
 
-Open the calculator:
+Open the calculator locally:
 
 ```bash
 open web/index.html
 ```
 
-## TC Definitions
-
-The project separates these modes:
-
-- `Exact float (legacy)`: exact decks remaining, floating true count, then bucketed for reporting.
-- `Exact int`: exact decks remaining, true count truncated toward zero before betting/bucketing.
-- `1 deck int`: remaining decks rounded to the nearest full deck, then true count truncated toward zero.
-- `0.5 deck int`: remaining decks rounded to the nearest half deck, then true count truncated toward zero.
-
-For player-facing comparisons, use `Exact int`, `1 deck int`, and `0.5 deck int`.
-
-## Early Deviation Note
-
-Early Monte Carlo scans suggest Double Down Madness does not copy ordinary blackjack index numbers directly. In this game, hitting often remains better longer on stiff hands, likely because:
-
-- Dealer 22 pushes instead of paying standing hands.
-- After hitting, the player can still enter profitable future double opportunities.
-
-Examples from the current focused scan:
-
-- `16 vs 10`: stand appears much later than ordinary blackjack, around TC +6/+7.
-- `12 vs 3`: stand around TC +4.
-- `12 vs 4`: stand around TC +2.
-- `13 vs 2`: stand around TC +4.
-- single-card `8 vs 4`: hit at TC 0 and below; double around TC +3.
-
-The current tested-deviation strategy improved a 50M-round-per-strategy full-shoe comparison by about `0.0029` units/round, or `0.116` percentage points of EV per initial bet, under the included 1-2-4-8-12-16 ramp. This is promising but still preliminary.
-
-See `docs/ddm_deviation_research_notes.md` for the current notes and caveats.
-
 ## Reproducibility
 
-The current scripts use Python standard library only. Simulations are seed-controlled, but Monte Carlo error remains material, especially in high true-count tails.
+The current scripts use Python standard library only. Simulations are
+seed-controlled, but Monte Carlo error remains material, especially in high
+true-count tails.
 
 For publication-quality claims, include:
 
-- ruleset
-- TC estimation mode
-- penetration
-- rounds per scenario
-- random seed range
-- confidence interval or standard error
-- whether results are bucket-composed or directly simulated with the full ramp
+- Ruleset.
+- TC estimation mode.
+- Penetration.
+- Rounds per scenario.
+- Random seed range.
+- Confidence interval or standard error.
+- Whether results are bucket-composed or directly simulated with the full ramp.
