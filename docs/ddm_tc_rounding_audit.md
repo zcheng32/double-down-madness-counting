@@ -41,6 +41,35 @@ Conditions:
 | half | 20,000,000 | $1.214 | +/-$0.047 | $34.25 | 3.545% | $107.13 |
 | full | 20,000,000 | $1.020 | +/-$0.040 | $30.30 | 3.367% | $92.35 |
 
+## Same-Risk / Same-Bet Check
+
+Because `exact`, `half`, and `full` do not place the same average bet under the
+same displayed ramp, the project also compares them after scaling each ramp
+shape to the same average initial bet or the same SD/round as `exact`.
+
+This scaling does not optimize the ramp. It only answers: if we keep the same
+ramp shape, is the `exact` advantage just coming from betting more or taking
+more variance?
+
+For the same 6D, cut-1, 2-player, 20M-round data above:
+
+| Comparison | Mode | Scale | EV/round | SD/round | Avg initial bet | EV/avg bet | N0 rounds |
+|---|---|---:|---:|---:|---:|---:|---:|
+| raw | exact | 1.000 | $1.444 | $120.64 | $37.53 | 3.846% | 6,984 |
+| raw | half | 1.000 | $1.214 | $107.13 | $34.25 | 3.545% | 7,786 |
+| raw | full | 1.000 | $1.020 | $92.35 | $30.30 | 3.367% | 8,192 |
+| equal avg bet | exact | 1.000 | $1.444 | $120.64 | $37.53 | 3.846% | 6,984 |
+| equal avg bet | half | 1.096 | $1.331 | $117.41 | $37.53 | 3.545% | 7,786 |
+| equal avg bet | full | 1.239 | $1.264 | $114.38 | $37.53 | 3.367% | 8,192 |
+| equal SD | exact | 1.000 | $1.444 | $120.64 | $37.53 | 3.846% | 6,984 |
+| equal SD | half | 1.126 | $1.367 | $120.64 | $38.56 | 3.545% | 7,786 |
+| equal SD | full | 1.306 | $1.333 | $120.64 | $39.58 | 3.367% | 8,192 |
+
+Interpretation: in this cut-1, 2-player dataset, `exact` remains ahead after
+normalizing either average initial bet or per-round standard deviation. The
+coarser modes are not merely lower-risk versions of the same edge; they lose
+some betting information.
+
 ## Paired Same-Shoe Comparison
 
 A separate paired-comparison script evaluates `exact`, `half`, and `full` from
@@ -74,3 +103,5 @@ noise, and unequal sample sizes.
 - Cut-1, 2-player `exact/half/full` data has been rerun at equal 20M sample size.
 - Additional penetration/player-count combinations should be rerun before being
   presented as publication-grade data.
+- The first clean 2-player penetration extension is recorded in
+  `docs/ddm_penetration_clean_2p_20m.md`.

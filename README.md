@@ -110,6 +110,7 @@ Publication-grade comparisons should use datasets rerun under the current
 Relevant file:
 
 - `docs/ddm_tc_rounding_audit.md`
+- `docs/ddm_penetration_clean_2p_20m.md`
 
 ### 5. Deviation Findings
 
@@ -185,6 +186,9 @@ GitHub Pages file:
 
 - `src/ddm_tc_mode_paired_compare.py`  
   Same-shoe paired comparison of `exact`, `half`, and `full` TC estimation modes.
+
+- `src/ddm_risk_normalized_compare.py`  
+  Same-ramp comparison after scaling to equal average bet or equal SD/round.
 
 - `web/index.html`  
   Static bankroll calculator UI.
