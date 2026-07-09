@@ -122,7 +122,7 @@ def build_scenarios(args: argparse.Namespace) -> list[Scenario]:
 
 
 def command_for(scenario: Scenario) -> list[str]:
-    return [
+    cmd = [
         sys.executable,
         "outputs/ddm_bankroll_calculator.py",
         "--rounds",
@@ -162,7 +162,7 @@ def main() -> int:
     parser.add_argument("--seed-base", type=int, default=8000)
     parser.add_argument("--output-dir", default="outputs/scenario_grid")
     parser.add_argument("--suffix", default="")
-    parser.add_argument("--tc-deck-estimate", choices=["exact", "exact-int", "1", "0.5"], default="exact")
+    parser.add_argument("--tc-deck-estimate", choices=["exact", "half", "full"], default="exact")
     parser.add_argument("--dealer-completes-hand", action="store_true")
     parser.add_argument("--execute", action="store_true")
     parser.add_argument("--skip-existing", action="store_true")

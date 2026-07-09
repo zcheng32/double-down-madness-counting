@@ -21,7 +21,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--decks", type=int, default=6)
     parser.add_argument("--penetration", type=float, default=5 / 6)
     parser.add_argument("--ace-one-card-rule", choices=["any", "double"], default="any")
-    parser.add_argument("--tc-deck-estimate", choices=["exact", "exact-int", "1", "0.5"], default="exact-int")
+    parser.add_argument("--tc-deck-estimate", choices=["exact", "half", "full"], default="exact")
     parser.add_argument("--ramp", default="-99:1,1:2,2:4,3:8,4:12,5:16")
     parser.add_argument("--user-spots", type=int, default=1)
     parser.add_argument("--other-spots", type=int, default=0)

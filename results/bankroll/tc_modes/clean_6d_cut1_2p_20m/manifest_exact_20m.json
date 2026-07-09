@@ -1,0 +1,28 @@
+[
+  {
+    "decks": 6,
+    "cut_decks": 1.0,
+    "players": 2,
+    "user_spots": 1,
+    "seed": 11000,
+    "rounds": 20000000,
+    "output": "outputs/scenario_grid_clean_6d_cut1_2p_20m/ddm_scenario_d6_cut1_u1_o1_20m_20m_tcexact_clean.csv",
+    "tc_deck_estimate": "exact",
+    "dealer_completes_hand": false,
+    "penetration": 0.8333333333333334,
+    "label": "6D, cut 1 decks (52 cards, ~83.3%), 2 players, user 1 spot(s), tc exact"
+  },
+  {
+    "decks": 6,
+    "cut_decks": 1.0,
+    "players": 2,
+    "user_spots": 2,
+    "seed": 11001,
+    "rounds": 20000000,
+    "output": "outputs/scenario_grid_clean_6d_cut1_2p_20m/ddm_scenario_d6_cut1_u2_o1_20m_20m_tcexact_clean.csv",
+    "tc_deck_estimate": "exact",
+    "dealer_completes_hand": false,
+    "penetration": 0.8333333333333334,
+    "label": "6D, cut 1 decks (52 cards, ~83.3%), 2 players, user 2 spot(s), tc exact"
+  }
+]

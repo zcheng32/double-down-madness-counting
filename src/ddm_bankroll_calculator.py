@@ -157,7 +157,7 @@ def main() -> None:
     parser.add_argument("--bankroll", type=float, default=10_000.0)
     parser.add_argument("--unit-size", type=float, default=25.0)
     parser.add_argument("--hands-per-hour", type=float, default=60.0)
-    parser.add_argument("--tc-deck-estimate", choices=["exact", "exact-int", "1", "0.5"], default="exact")
+    parser.add_argument("--tc-deck-estimate", choices=["exact", "half", "full"], default="exact")
     parser.add_argument("--strategy", choices=["basic", "tested-deviations"], default="basic")
     parser.add_argument("--dealer-completes-hand", action="store_true")
     parser.add_argument("--bucket-csv", default="")

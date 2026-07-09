@@ -1,48 +1,76 @@
-# DDM TC Rounding Audit
+# DDM TC Estimation Audit
 
-This audit separates legacy floating exact true count from integer-truncated playing true count.
+This audit records an important correction to the true-count estimation modes.
+The project now keeps only `exact`, `half`, and `full`, and all three modes use
+integer truncation toward zero after the deck divisor is chosen.
 
-Default calculator ramp used: $25 through TC +1, $100 at TC +2, $200 at TC +3, $300 at TC +4, $400 at TC +5 and above, with two hands from TC +2.
+The main calculator comparison below uses this ramp: no play at `<= -5`; $10
+from TC -4 through TC 0; $25 at TC +1; $30 at TC +2; $50 at TC +3; $100 at
+TC +4; $150 at TC +5; $200 at TC +6; $250 at TC +7 and above, with two hands
+from TC +2.
 
 ## Code Findings
 
-- Legacy `exact` returns a floating true count and `tc_bucket()` floors it for bucket labels.
-- Practical `1` and `0.5` estimate remaining decks and then use Python `int()`, truncating toward zero.
-- New `exact-int` uses exact remaining decks but also truncates true count toward zero before betting/bucketing. This is the fairer comparison point for practical integer TC play.
+- `exact`: divide RC by exact decks remaining, then truncate toward zero.
+- `half`: round decks remaining up to the next 0.5 deck, divide RC by that divisor, then truncate toward zero.
+- `full`: round decks remaining up to the next 1.0 deck, divide RC by that divisor, then truncate toward zero.
+- Example: if 3.25 decks remain, `half` uses 3.5 and `full` uses 4.0.
 
-## Calculator Comparison
+## Clean 2-Player 20M Rerun
 
-| Cut cards | Mode | Rounds | EV/round | 95% CI | EV/hour | Avg bet | EV/avg bet |
-|---:|---|---:|---:|---:|---:|---:|---:|
-| 1 decks | Exact float legacy | 50,000,000 | $3.24 | ±$0.08 | $463.40 | $94.73 | 3.421% |
-| 1 decks | Exact int | 20,000,000 | $3.15 | ±$0.12 | $450.24 | $94.62 | 3.328% |
-| 1 decks | 1 deck int | 20,000,000 | $3.51 | ±$0.13 | $501.84 | $104.07 | 3.373% |
-| 1 decks | 0.5 deck int | 5,000,000 | $3.48 | ±$0.25 | $497.79 | $101.63 | 3.426% |
-| 1.25 decks | Exact float legacy | 50,000,000 | $2.71 | ±$0.07 | $367.46 | $88.78 | 3.057% |
-| 1.25 decks | Exact int | 20,000,000 | $2.65 | ±$0.11 | $358.51 | $88.37 | 2.996% |
-| 1.25 decks | 1 deck int | 20,000,000 | $2.95 | ±$0.12 | $399.91 | $96.91 | 3.047% |
-| 1.25 decks | 0.5 deck int | 5,000,000 | $2.87 | ±$0.24 | $388.71 | $93.28 | 3.077% |
-| 1.5 decks | Exact float legacy | 5,000,000 | $2.11 | ±$0.21 | $270.70 | $81.84 | 2.579% |
-| 1.5 decks | Exact int | 20,000,000 | $2.34 | ±$0.11 | $300.62 | $81.93 | 2.860% |
-| 1.5 decks | 1 deck int | 20,000,000 | $2.35 | ±$0.11 | $301.61 | $86.82 | 2.708% |
-| 1.5 decks | 0.5 deck int | 5,000,000 | $2.30 | ±$0.22 | $295.08 | $87.15 | 2.639% |
-| 1.75 decks | Exact float legacy | 5,000,000 | $1.70 | ±$0.20 | $206.27 | $76.10 | 2.236% |
-| 1.75 decks | Exact int | 20,000,000 | $1.79 | ±$0.10 | $216.88 | $75.86 | 2.358% |
-| 1.75 decks | 1 deck int | 20,000,000 | $1.98 | ±$0.11 | $239.62 | $82.32 | 2.401% |
-| 1.75 decks | 0.5 deck int | 5,000,000 | $2.15 | ±$0.21 | $261.18 | $80.11 | 2.689% |
-| 2 decks | Exact float legacy | 5,000,000 | $1.49 | ±$0.18 | $171.08 | $70.96 | 2.100% |
-| 2 decks | Exact int | 20,000,000 | $1.57 | ±$0.09 | $180.69 | $70.48 | 2.234% |
-| 2 decks | 1 deck int | 20,000,000 | $1.84 | ±$0.10 | $211.48 | $77.57 | 2.375% |
-| 2 decks | 0.5 deck int | 5,000,000 | $1.65 | ±$0.19 | $189.87 | $75.36 | 2.195% |
+The older cut-1, two-player calculator data was removed from the calculator
+presentation and replaced with a clean rerun under the current `exact`, `half`,
+and `full` definitions. Each mode uses 20M rounds for the one-spot bucket data
+and 20M rounds for the two-spot support data.
 
-## Why 1 Deck Can Appear Higher Than Exact Int
+Conditions:
 
-The calculator is applying one fixed ramp to different TC bucket definitions. A coarser bucket definition can produce a larger average bet under that same ramp. For cut 1 deck with the current default ramp, `Exact int` has EV/round about $3.15 with average bet $94.62, while `1 deck int` has EV/round about $3.51 with average bet $104.07. If the `1 deck int` ramp is scaled down to the same average bet as `Exact int`, its EV/round is about $3.19, only about $0.04 higher than `Exact int`, far inside the Monte Carlo uncertainty for this comparison.
+- 6 decks.
+- Cut 1 deck, about 83% penetration.
+- 2 players at the table: the user plus one other basic-strategy player.
+- Strict first-card Ace rule.
+- Version 1 blackjack pays.
+- Two hands from TC +2 in the calculator composition below.
+- Ramp: no play at `<= -5`; $10 from TC -4 through TC 0; $25 at TC +1; $30 at
+  TC +2; $50 at TC +3; $100 at TC +4; $150 at TC +5; $200 at TC +6; $250 at
+  TC +7 and above.
 
-So the current evidence does not show that estimating to 1 deck is truly stronger than exact integer TC. It shows that fixed bucket ramps must be compared either at equal average bet/risk or after separately optimizing each ramp.
+| TC mode | Rounds | EV/round | 95% CI | Avg initial bet | EV/avg bet | SD/round |
+|---|---:|---:|---:|---:|---:|---:|
+| exact | 20,000,000 | $1.444 | +/-$0.053 | $37.53 | 3.846% | $120.64 |
+| half | 20,000,000 | $1.214 | +/-$0.047 | $34.25 | 3.545% | $107.13 |
+| full | 20,000,000 | $1.020 | +/-$0.040 | $30.30 | 3.367% | $92.35 |
+
+## Paired Same-Shoe Comparison
+
+A separate paired-comparison script evaluates `exact`, `half`, and `full` from
+the same pre-round shoe state. This greatly reduces noise when asking which TC
+estimation mode performs better under the same ramp.
+
+For 5M paired opportunities, 6 decks, cut 1 deck, heads-up opportunity sampling,
+two hands from TC +2, and the same ramp:
+
+| Mode | EV/round | 95% CI | Avg initial bet | EV/avg bet |
+|---|---:|---:|---:|---:|
+| exact | $1.459 | +/-$0.106 | $37.67 | 3.873% |
+| half | $1.270 | +/-$0.094 | $34.47 | 3.684% |
+| full | $1.038 | +/-$0.081 | $30.38 | 3.416% |
+
+Paired differences:
+
+| Difference | EV/round difference | 95% CI |
+|---|---:|---:|
+| half - exact | -$0.189 | +/-$0.022 |
+| full - exact | -$0.421 | +/-$0.039 |
+
+Interpretation: under this ramp, the coarser `half/full` estimates lower both
+average bet and EV. Earlier observations where a coarser mode appeared better
+were caused by a mix of old deck-estimation definitions, non-paired Monte Carlo
+noise, and unequal sample sizes.
 
 ## Interpretation
 
-- EV/round can be higher for a coarser TC estimate because the same bucket ramp may create a larger average bet. Compare EV/avg bet too.
-- The old Exact option was useful as a floating-TC diagnostic, but misleading as a player-facing integer TC comparison.
-- For player-facing calculator work, compare `Exact int`, `1 deck int`, and `0.5 deck int`; treat `Exact float` as legacy/reference only.
+- Current player-facing calculator work should compare only `exact`, `half`, and `full`.
+- Cut-1, 2-player `exact/half/full` data has been rerun at equal 20M sample size.
+- Additional penetration/player-count combinations should be rerun before being
+  presented as publication-grade data.

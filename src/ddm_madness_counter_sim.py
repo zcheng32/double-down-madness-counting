@@ -86,17 +86,21 @@ class Shoe:
 
 
 def estimated_true_count(shoe: Shoe, deck_estimate: str) -> float:
+    exact_decks = len(shoe.cards) / 52.0
     if deck_estimate == "exact":
-        decks_remaining = len(shoe.cards) / 52.0
-        return shoe.running_count / max(decks_remaining, 0.25)
-    if deck_estimate == "exact-int":
-        decks_remaining = len(shoe.cards) / 52.0
-        return float(int(shoe.running_count / max(decks_remaining, 0.25)))
+        return float(int(shoe.running_count / max(exact_decks, 0.25)))
+    increments = {
+        "full": 1.0,
+        "half": 0.5,
+    }
+    if deck_estimate not in increments:
+        raise ValueError(f"unknown true-count deck estimate mode: {deck_estimate}")
+    increment = increments[deck_estimate]
+    if increment == 0.0:
+        decks_remaining = exact_decks
     else:
-        increment = float(deck_estimate)
-        exact_decks = len(shoe.cards) / 52.0
-        decks_remaining = round(exact_decks / increment) * increment
-        return float(int(shoe.running_count / max(decks_remaining, 0.25)))
+        decks_remaining = math.ceil(exact_decks / increment) * increment
+    return float(int(shoe.running_count / max(decks_remaining, 0.25)))
 
 
 @dataclass

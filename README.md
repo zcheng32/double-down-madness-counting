@@ -68,8 +68,7 @@ card handling, and Ace handling are all explicit.
 Relevant files:
 
 - `src/ddm_madness_counter_sim.py`
-- `results/bankroll/manifest_exactint_20m.json`
-- `results/bankroll/manifest_tc1deck_trunc_20m.json`
+- `results/bankroll/tc_modes/clean_6d_cut1_2p_20m/`
 
 ### 3. Counting EV Results
 
@@ -93,15 +92,20 @@ Relevant files:
 
 ### 4. True Count Estimation Impact
 
-A real player does not know exact fractional decks remaining. The project
-separates several true-count modes:
+A real player does not know exact fractional decks remaining. The project now
+uses three player-facing true-count modes, all integer-truncated toward zero:
 
-- `Exact float (legacy)`: exact decks remaining, floating true count, then bucketed for reporting.
-- `Exact int`: exact decks remaining, true count truncated toward zero before betting/bucketing.
-- `1 deck int`: remaining decks rounded to the nearest full deck, then true count truncated toward zero.
-- `0.5 deck int`: remaining decks rounded to the nearest half deck, then true count truncated toward zero.
+- `exact`: exact decks remaining, then truncate the true count.
+- `half`: remaining decks rounded up to the next half deck, then truncate the true count.
+- `full`: remaining decks rounded up to the next full deck, then truncate the true count.
 
-For player-facing comparisons, use `Exact int`, `1 deck int`, and `0.5 deck int`.
+Example: if 3.25 decks remain and RC is +9, `exact`, `half`, and `full` all
+produce TC +2. If RC is +13, `exact` produces +4, while `half` and `full`
+produce +3 because they divide by 3.5 and 4.0 decks respectively.
+
+Earlier deck-estimation datasets were removed from the calculator presentation.
+Publication-grade comparisons should use datasets rerun under the current
+`exact/half/full` definitions.
 
 Relevant file:
 
@@ -179,6 +183,9 @@ GitHub Pages file:
 - `src/ddm_strategy_compare.py`  
   Full-shoe comparison of basic strategy vs the current tested-deviation strategy.
 
+- `src/ddm_tc_mode_paired_compare.py`  
+  Same-shoe paired comparison of `exact`, `half`, and `full` TC estimation modes.
+
 - `web/index.html`  
   Static bankroll calculator UI.
 
@@ -199,7 +206,7 @@ python3 src/ddm_bankroll_calculator.py \
   --decks 6 \
   --penetration 0.83333333 \
   --ace-one-card-rule any \
-  --tc-deck-estimate exact-int \
+  --tc-deck-estimate exact \
   --bucket-csv results/sample_exact_int.csv
 ```
 
