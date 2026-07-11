@@ -6,6 +6,32 @@ Double Down Madness Blackjack can be beaten with card counting.
 This project is a research notebook, not gambling advice. The results are
 preliminary and should be independently checked before being treated as final.
 
+## Current Findings
+
+Under the current strict-Ace Version 1 model, the Monte Carlo evidence suggests
+Double Down Madness is countable and may be beatable with a risk-controlled
+true-count ramp.
+
+The strongest evidence so far is:
+
+- Hi-Lo true count has a strong relationship with player edge.
+- Neutral and negative counts remain bad for the player.
+- Positive counts, especially TC +2 and above, become strongly positive.
+- A risk-constrained ramp can produce positive EV/hour while keeping modeled
+  risk of ruin near 1% for a $20,000 bankroll.
+
+Preview optimized-ramp results for six decks, cut one deck, two players, two
+hands from TC +2, $500 max bet per spot, and about 1% modeled risk of ruin:
+
+| TC estimation | EV/hour | SD/hour | Avg initial bet | N0 rounds | RoR |
+|---|---:|---:|---:|---:|---:|
+| Full-deck round-up | $145.90 | $1,124.27 | $33.14 | 5,819 | 0.988% |
+| Half-deck round-up | $146.05 | $1,123.83 | $32.53 | 5,803 | 0.980% |
+| Exact decks remaining | $147.48 | $1,109.30 | $31.26 | 5,544 | 0.828% |
+
+These are preliminary bucket-composed results, not casino-ready betting advice.
+See `docs/ddm_beatability_evidence.md` for assumptions and limitations.
+
 ## Current Ruleset
 
 The current model targets Double Down Madness Version 1:
@@ -88,6 +114,7 @@ Relevant files:
 
 - `src/ddm_bankroll_calculator.py`
 - `src/ddm_run_scenario_grid.py`
+- `src/optimize_tc_ramp.py`
 - `web/index.html`
 
 ### 4. True Count Estimation Impact
@@ -164,6 +191,15 @@ GitHub Pages file:
 
 - `docs/index.html`
 
+### 7. Beatability Evidence
+
+The current DDM-only beatability argument is summarized in:
+
+- `docs/ddm_beatability_evidence.md`
+
+This page focuses on whether DDM itself can be beaten under the modeled rules.
+It does not require a comparison to ordinary blackjack.
+
 ## What Is Included
 
 - `src/ddm_madness_counter_sim.py`  
@@ -189,6 +225,9 @@ GitHub Pages file:
 
 - `src/ddm_risk_normalized_compare.py`  
   Same-ramp comparison after scaling to equal average bet or equal SD/round.
+
+- `src/optimize_tc_ramp.py`  
+  Optimizes a true-count betting ramp under a target risk-of-ruin constraint.
 
 - `web/index.html`  
   Static bankroll calculator UI.
