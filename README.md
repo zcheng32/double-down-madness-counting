@@ -17,18 +17,25 @@ The strongest evidence so far is:
 - Hi-Lo true count has a strong relationship with player edge.
 - Neutral and negative counts remain bad for the player.
 - Positive counts, especially TC +2 and above, become strongly positive.
-- A risk-constrained ramp can produce positive EV/hour while keeping modeled
-  risk of ruin near 1% for a $20,000 bankroll.
+- A simple one-hand 1-2-4-8-16 ramp produces positive EV/hour in the current
+  clean six-deck, cut-one-deck, two-player dataset.
 
-Preview optimized-ramp results for six decks, cut one deck, two players, one
-unit minimum bet through TC 0, two hands from TC +2, $500 max bet per spot, and
-about 1% modeled risk of ruin:
+Preview fixed-ramp results for six decks, cut one deck, two players, one hand
+only, $10 unit size, and the following ramp:
+
+| TC bucket | Bet |
+|---:|---:|
+| <= 0 | 1 unit |
+| +1 | 2 units |
+| +2 | 4 units |
+| +3 | 8 units |
+| >= +4 | 16 units |
 
 | TC estimation | EV/hour | SD/hour | Avg initial bet | N0 rounds | RoR |
 |---|---:|---:|---:|---:|---:|
-| Full-deck round-up | $101.73 | $921.49 | $33.64 | 8,041 | 0.830% |
-| Half-deck round-up | $108.29 | $968.33 | $35.18 | 7,836 | 0.986% |
-| Exact decks remaining | $115.35 | $997.91 | $35.44 | 7,335 | 0.972% |
+| Full-deck round-up | $48.80 | $652.09 | $22.37 | 17,496 | 1.014% |
+| Half-deck round-up | $54.60 | $714.33 | $24.09 | 16,773 | 1.384% |
+| Exact decks remaining | $59.83 | $751.48 | $25.14 | 15,460 | 1.444% |
 
 These are preliminary bucket-composed results, not casino-ready betting advice.
 See `docs/ddm_beatability_evidence.md` for assumptions and limitations.
@@ -115,7 +122,6 @@ Relevant files:
 
 - `src/ddm_bankroll_calculator.py`
 - `src/ddm_run_scenario_grid.py`
-- `src/optimize_tc_ramp.py`
 - `web/index.html`
 
 ### 4. True Count Estimation Impact
@@ -226,9 +232,6 @@ It does not require a comparison to ordinary blackjack.
 
 - `src/ddm_risk_normalized_compare.py`  
   Same-ramp comparison after scaling to equal average bet or equal SD/round.
-
-- `src/optimize_tc_ramp.py`  
-  Optimizes a true-count betting ramp under a target risk-of-ruin constraint.
 
 - `web/index.html`  
   Static bankroll calculator UI.

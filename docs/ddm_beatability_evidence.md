@@ -44,35 +44,38 @@ counts, but high counts are valuable enough that a player who can sit out or bet
 very small in bad buckets and press in good buckets can create a positive EV
 profile.
 
-## Risk-Constrained Ramp Preview
+## Simple Fixed-Ramp Preview
 
-The current optimization script solves for a monotone true-count ramp under a
-risk-of-ruin target. The preview below uses:
+The simplest way to show beatability is not to optimize every bucket, but to
+use a small fixed ramp that a player can understand quickly. The preview below
+uses:
 
 - Bankroll: $20,000.
-- Target risk of ruin: about 1%.
-- Minimum bet: $10 through TC 0.
-- Two hands from TC +2.
-- Maximum bet per spot: $500.
-- Bets rounded to $5.
+- Unit size: $10.
+- One hand only.
+- TC <= 0: 1 unit.
+- TC +1: 2 units.
+- TC +2: 4 units.
+- TC +3: 8 units.
+- TC +4 and above: 16 units.
 - 3 shoes/hour speed model.
 - Six decks, cut one deck, two players.
 
 | TC estimation | EV/hour | SD/hour | Avg initial bet | N0 rounds | RoR |
 |---|---:|---:|---:|---:|---:|
-| Full-deck round-up | $101.73 | $921.49 | $33.64 | 8,041 | 0.830% |
-| Half-deck round-up | $108.29 | $968.33 | $35.18 | 7,836 | 0.986% |
-| Exact decks remaining | $115.35 | $997.91 | $35.44 | 7,335 | 0.972% |
+| Full-deck round-up | $48.80 | $652.09 | $22.37 | 17,496 | 1.014% |
+| Half-deck round-up | $54.60 | $714.33 | $24.09 | 16,773 | 1.384% |
+| Exact decks remaining | $59.83 | $751.48 | $25.14 | 15,460 | 1.444% |
 
 These numbers are not presented as final casino-ready betting advice. They show
-that, under the model and constraints above, the optimizer can find positive-EV
-ramps with controlled risk.
+that, under the model and constraints above, even a basic one-hand ramp can
+produce positive EV.
 
 ## Example Full-Deck Round-Up Ramp
 
-This is the optimized full-deck round-up ramp from the preview run.
+This is the fixed full-deck round-up ramp from the preview run.
 
-| TC bucket | Bet / spot | Spots | Simulated edge |
+| TC bucket | Bet | Hands | Simulated edge |
 |---:|---:|---:|---:|
 | <= -5 | $10 | 1 | -10.763% |
 | -4 | $10 | 1 | -7.258% |
@@ -80,14 +83,14 @@ This is the optimized full-deck round-up ramp from the preview run.
 | -2 | $10 | 1 | -4.030% |
 | -1 | $10 | 1 | -2.765% |
 | 0 | $10 | 1 | -0.908% |
-| +1 | $25 | 1 | +1.069% |
-| +2 | $45 | 2 | +4.548% |
-| +3 | $75 | 2 | +7.695% |
-| +4 | $105 | 2 | +10.637% |
-| +5 | $130 | 2 | +12.897% |
-| +6 | $165 | 2 | +16.576% |
-| +7 | $205 | 2 | +20.305% |
-| >= +8 | $240 | 2 | +24.392% |
+| +1 | $20 | 1 | +1.069% |
+| +2 | $40 | 1 | +2.397% |
+| +3 | $80 | 1 | +3.580% |
+| +4 | $160 | 1 | +5.573% |
+| +5 | $160 | 1 | +7.096% |
+| +6 | $160 | 1 | +8.275% |
+| +7 | $160 | 1 | +8.949% |
+| >= +8 | $160 | 1 | +11.699% |
 
 ## Why This Does Not Contradict The House Edge
 
@@ -107,7 +110,7 @@ more volatile, but it also gives the count more leverage.
 
 ## Limitations
 
-- The optimized ramps are bucket-composed from simulations, not yet direct
+- The fixed-ramp results are bucket-composed from simulations, not yet direct
   end-to-end trip simulations.
 - The risk-of-ruin estimate uses a diffusion approximation.
 - High-count buckets are rare and need very large samples for publication-grade
@@ -118,15 +121,11 @@ more volatile, but it also gives the count more leverage.
 
 ## Reproducibility
 
-The optimization script is:
-
-- `src/optimize_tc_ramp.py`
-
 The included preview outputs are:
 
-- `results/optimized_ramps/ddm_full_bankroll20k_ror1_max500.csv`
-- `results/optimized_ramps/ddm_half_bankroll20k_ror1_max500.csv`
-- `results/optimized_ramps/ddm_exact_bankroll20k_ror1_max500.csv`
+- `results/fixed_ramps/ddm_full_124816_onehand_20k.csv`
+- `results/fixed_ramps/ddm_half_124816_onehand_20k.csv`
+- `results/fixed_ramps/ddm_exact_124816_onehand_20k.csv`
 
 The underlying clean penetration dataset is documented in:
 
