@@ -20,14 +20,15 @@ The strongest evidence so far is:
 - A risk-constrained ramp can produce positive EV/hour while keeping modeled
   risk of ruin near 1% for a $20,000 bankroll.
 
-Preview optimized-ramp results for six decks, cut one deck, two players, two
-hands from TC +2, $500 max bet per spot, and about 1% modeled risk of ruin:
+Preview optimized-ramp results for six decks, cut one deck, two players, one
+unit minimum bet through TC 0, two hands from TC +2, $500 max bet per spot, and
+about 1% modeled risk of ruin:
 
 | TC estimation | EV/hour | SD/hour | Avg initial bet | N0 rounds | RoR |
 |---|---:|---:|---:|---:|---:|
-| Full-deck round-up | $145.90 | $1,124.27 | $33.14 | 5,819 | 0.988% |
-| Half-deck round-up | $146.05 | $1,123.83 | $32.53 | 5,803 | 0.980% |
-| Exact decks remaining | $147.48 | $1,109.30 | $31.26 | 5,544 | 0.828% |
+| Full-deck round-up | $101.73 | $921.49 | $33.64 | 8,041 | 0.830% |
+| Half-deck round-up | $108.29 | $968.33 | $35.18 | 7,836 | 0.986% |
+| Exact decks remaining | $115.35 | $997.91 | $35.44 | 7,335 | 0.972% |
 
 These are preliminary bucket-composed results, not casino-ready betting advice.
 See `docs/ddm_beatability_evidence.md` for assumptions and limitations.

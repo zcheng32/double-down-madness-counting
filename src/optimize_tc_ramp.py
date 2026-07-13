@@ -82,9 +82,12 @@ def risk_of_ruin(bankroll: float, ev_round: float, variance_round: float) -> flo
 def optimize(args: argparse.Namespace) -> dict[str, object]:
     freqs, mu, sd, spots = compose_arrays(Path(args.one), Path(args.two), args.two_hands_from)
     target_log = math.log(1.0 / args.target_ror)
+    lower_bounds = np.array(
+        [args.min_bet if tc_value(bucket) <= args.min_bet_through_tc else 0.0 for bucket in BUCKET_ORDER]
+    )
 
     # A conservative warm start: play only positive buckets, then scale to the RoR boundary.
-    x0 = np.where(mu > 0, args.max_bet * 0.25, 0.0)
+    x0 = np.maximum(lower_bounds, np.where(mu > 0, args.max_bet * 0.25, 0.0))
     for i in range(1, len(x0)):
         x0[i] = max(x0[i], x0[i - 1])
     ev0, var0 = moments(x0, freqs, mu, sd)
@@ -92,7 +95,7 @@ def optimize(args: argparse.Namespace) -> dict[str, object]:
         scale = min(1.0, (2.0 * ev0 * args.bankroll / (target_log * var0)))
         x0 *= max(scale, 0.05)
 
-    bounds = [(0.0, args.max_bet) for _ in BUCKET_ORDER]
+    bounds = [(float(lower), args.max_bet) for lower in lower_bounds]
 
     constraints = []
     # RoR <= target means variance <= 2 * EV * bankroll / log(1/target).
@@ -109,7 +112,8 @@ def optimize(args: argparse.Namespace) -> dict[str, object]:
     # Avoid playing negative-EV buckets unless monotonicity forces it.
     for i, edge in enumerate(mu):
         if edge < 0:
-            constraints.append({"type": "ineq", "fun": lambda x, i=i: args.negative_bucket_cap - x[i]})
+            cap = max(args.negative_bucket_cap, lower_bounds[i])
+            constraints.append({"type": "ineq", "fun": lambda x, i=i, cap=cap: cap - x[i]})
 
     result = minimize(
         lambda x: -moments(x, freqs, mu, sd)[0],
@@ -131,7 +135,7 @@ def optimize(args: argparse.Namespace) -> dict[str, object]:
             if risk_of_ruin(args.bankroll, ev, var) <= args.target_ror:
                 break
             bets *= 0.99
-            bets = np.floor(bets / args.round_to) * args.round_to
+            bets = np.maximum(lower_bounds, np.floor(bets / args.round_to) * args.round_to)
 
     ev, var = moments(bets, freqs, mu, sd)
     sd_round = math.sqrt(var)
@@ -162,6 +166,8 @@ def main() -> int:
     parser.add_argument("--two-hands-from", type=int, default=2)
     parser.add_argument("--max-bet", type=float, default=500.0)
     parser.add_argument("--negative-bucket-cap", type=float, default=0.0)
+    parser.add_argument("--min-bet", type=float, default=0.0)
+    parser.add_argument("--min-bet-through-tc", type=int, default=-99)
     parser.add_argument("--round-to", type=float, default=5.0)
     parser.add_argument("--out", default="")
     args = parser.parse_args()

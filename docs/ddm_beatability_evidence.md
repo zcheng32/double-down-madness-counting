@@ -51,18 +51,18 @@ risk-of-ruin target. The preview below uses:
 
 - Bankroll: $20,000.
 - Target risk of ruin: about 1%.
+- Minimum bet: $10 through TC 0.
 - Two hands from TC +2.
 - Maximum bet per spot: $500.
-- Negative-EV buckets capped at $0.
 - Bets rounded to $5.
 - 3 shoes/hour speed model.
 - Six decks, cut one deck, two players.
 
 | TC estimation | EV/hour | SD/hour | Avg initial bet | N0 rounds | RoR |
 |---|---:|---:|---:|---:|---:|
-| Full-deck round-up | $145.90 | $1,124.27 | $33.14 | 5,819 | 0.988% |
-| Half-deck round-up | $146.05 | $1,123.83 | $32.53 | 5,803 | 0.980% |
-| Exact decks remaining | $147.48 | $1,109.30 | $31.26 | 5,544 | 0.828% |
+| Full-deck round-up | $101.73 | $921.49 | $33.64 | 8,041 | 0.830% |
+| Half-deck round-up | $108.29 | $968.33 | $35.18 | 7,836 | 0.986% |
+| Exact decks remaining | $115.35 | $997.91 | $35.44 | 7,335 | 0.972% |
 
 These numbers are not presented as final casino-ready betting advice. They show
 that, under the model and constraints above, the optimizer can find positive-EV
@@ -74,20 +74,20 @@ This is the optimized full-deck round-up ramp from the preview run.
 
 | TC bucket | Bet / spot | Spots | Simulated edge |
 |---:|---:|---:|---:|
-| <= -5 | $0 | 1 | -10.763% |
-| -4 | $0 | 1 | -7.258% |
-| -3 | $0 | 1 | -5.611% |
-| -2 | $0 | 1 | -4.030% |
-| -1 | $0 | 1 | -2.765% |
-| 0 | $0 | 1 | -0.908% |
-| +1 | $35 | 1 | +1.069% |
-| +2 | $55 | 2 | +4.548% |
-| +3 | $95 | 2 | +7.695% |
-| +4 | $130 | 2 | +10.637% |
-| +5 | $160 | 2 | +12.897% |
-| +6 | $200 | 2 | +16.576% |
-| +7 | $245 | 2 | +20.305% |
-| >= +8 | $290 | 2 | +24.392% |
+| <= -5 | $10 | 1 | -10.763% |
+| -4 | $10 | 1 | -7.258% |
+| -3 | $10 | 1 | -5.611% |
+| -2 | $10 | 1 | -4.030% |
+| -1 | $10 | 1 | -2.765% |
+| 0 | $10 | 1 | -0.908% |
+| +1 | $25 | 1 | +1.069% |
+| +2 | $45 | 2 | +4.548% |
+| +3 | $75 | 2 | +7.695% |
+| +4 | $105 | 2 | +10.637% |
+| +5 | $130 | 2 | +12.897% |
+| +6 | $165 | 2 | +16.576% |
+| +7 | $205 | 2 | +20.305% |
+| >= +8 | $240 | 2 | +24.392% |
 
 ## Why This Does Not Contradict The House Edge
 
